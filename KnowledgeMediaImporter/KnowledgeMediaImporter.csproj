@@ -17,6 +17,7 @@
         <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.16.0"/>
         <PackageReference Include="MudBlazor" Version="6.10.0" />
         <PackageReference Include="MudBlazor.Extensions" Version="1.7.70-prev-2309251813-try-mudex" />
+        <PackageReference Include="PdfPig" Version="0.1.9-alpha-20230914-d59d2" />
     </ItemGroup>
 
     <ItemGroup>
