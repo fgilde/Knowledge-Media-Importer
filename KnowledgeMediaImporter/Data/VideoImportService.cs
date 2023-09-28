@@ -13,18 +13,26 @@ public class VideoImportService: IImportService
         return MimeType.Matches(contentType, MimeType.VideoTypes);
     }
 
-    public async Task<string> GetKnowledgeTextAsync(byte[] fileData, Action<string, double> progress)
+    public async Task<string> GetKnowledgeTextAsync(byte[] fileData, CancellationToken cancellationToken, Action<string, double> progress)
     {
         _analyzer= new VideoAnalyzer();
-        var result = await _analyzer.UploadVideoAsync(fileData, progress);
+        var result = await _analyzer.UploadVideoAsync(fileData, progress, cancellationToken);
         _videoId = result.VideoId;
         return result.Transcript;
     }
 
-    public async Task<string> AfterPrepareAsync(string text)
+    public async Task<string> AfterPrepareAsync(string text, CancellationToken cancellationToken)
     {
-       var url = await _analyzer.GetInsightsWidgetUrlAsync(_videoId);
-       var iframe = $"<iframe src=\"{url}\" style=\"width:100%; height:450px; border:none;\" />";
+        if (cancellationToken.IsCancellationRequested) return default;
+
+       var insightsWidgetUrlAsync = await _analyzer.GetInsightsWidgetUrlAsync(_videoId);
+       var playerUri = await _analyzer.GetPlayerWidgetUrlAsync(_videoId);
+      
+       var iframe = $"<details><summary>Show Video</summary>" +
+                         $"<iframe src=\"{insightsWidgetUrlAsync}\" style=\"width:100%; height:350px; border:none;\" />"+
+                         $"<iframe src=\"{playerUri}\" style=\"width:100%; height:450px; border:none;\" />" +
+                    $"</details>";
+       
        text += iframe;
        return text;
     }

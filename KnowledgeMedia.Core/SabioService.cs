@@ -12,11 +12,23 @@ public class SabioService
     const string realm = "qa-test";
     const string userName = "4nils";
     const string pw = "sonne";
+
+    private SabioClient? client = null;
     
-    public async Task<string> CreateArticleAsync(string title, string text, Action<string, double> progress)
+    public async Task LoginAsync()
     {
-        var client = new SabioClient(sabioUrl, realm);
-        await client.Api<AuthenticationApi>().LoginAsync(userName, pw);
+        if (client == null)
+        {
+            client = new SabioClient(sabioUrl, realm);
+            await client.Api<AuthenticationApi>().LoginAsync(userName, pw);
+        }
+    }
+
+    public async Task<string> CreateArticleAsync(string title, string text, CancellationToken cancellationToken, Action<string, double> progress)
+    {
+
+        if (cancellationToken.IsCancellationRequested) return string.Empty;
+        await LoginAsync();
         
         var tree = client.Api<TreeApi>().TreeAsync().Result;
         progress("Connecting to knowledge", 0.8);
@@ -43,10 +55,14 @@ public class SabioService
             Group = user.Groups.First(g => g.Name == "Leiter Redaktion")
         };
         progress("Create Article", 0.9);
+        if (cancellationToken.IsCancellationRequested) return string.Empty;
 
         var created = await client.Apis.Texts.CreateAsync(textToCreate);
-        progress(created.Success ? "Article created successfully" : "Failed to create Article", 0.93);
-        var url =  $"https://maestro-anna-knowledge.labs.swops.cloud/sabio5/#!/search/text/_id/{created.Data.Result.Id}";
-        return url;
+        if (!created?.Success ?? false)
+        {
+            
+        }
+        progress(created?.Success == true ? "Article created successfully" : "Failed to create Article", 0.93);
+        return $"https://maestro-anna-knowledge.labs.swops.cloud/sabio5/#!/search/text/_id/{created?.Data?.Result?.Id}";
     }
 }

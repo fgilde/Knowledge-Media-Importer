@@ -13,10 +13,13 @@ public class GptService
         Api = new OpenAIClient("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");
     }
 
-    public async Task<(string Title, string Content)> PrepareContentAsync(string text, Action<string, double> progress)
+    public async Task<(string Title, string Content)> PrepareContentAsync(string text, CancellationToken cancellationToken, Action<string, double> progress)
     {
+        //return ("TEST", text);
         progress("Prepare HTML Content", 0.5);
+        if (cancellationToken.IsCancellationRequested) return default;
         var contentString = await GenerateArticleContentAsync(text, Model.GPT4);
+        if (cancellationToken.IsCancellationRequested) return default;
         progress("Generate title", 0.7);
         var titleString = await GenerateArticleTitleAsync(text, Model.GPT4);
         return (titleString, contentString);

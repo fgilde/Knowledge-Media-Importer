@@ -16,19 +16,22 @@ public class VideoAnalyzer
         System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls12;
     }
 
-    public async Task<(string VideoId, string Transcript)> UploadVideoAsync(byte[] data, Action<string, double> progress)
+    public async Task<(string VideoId, string Transcript)> UploadVideoAsync(byte[] data, Action<string, double> progress, CancellationToken cancellationToken)
     {
         using (var client = CreateHttpClient())
         {
             progress("Create connection", 0.1);
             var accountAccessToken = await GetAccountAccessTokenAsync(client);
-            
+            if (cancellationToken.IsCancellationRequested) return default;
+
             progress("Upload video", 0.2);
 
            // var videoId = await UploadVideoDataAsync(client, data, accountAccessToken);
            progress("Analyzing video", 0.3);
+           if (cancellationToken.IsCancellationRequested) return default;
 
             // await WaitForVideoProcessingToCompleteAsync(client, videoId, accountAccessToken);
+            if (cancellationToken.IsCancellationRequested) return default;
 
             var videoId = "7346e6835d";
             progress("Read video info and generate transcription", 0.4);
@@ -36,6 +39,8 @@ public class VideoAnalyzer
             var content = await ReadVideoInfoAsync(client, videoId, accountAccessToken);
             var text = string.Join(Environment.NewLine, content.videos.First().insights.transcript.Select(t => t.text));
             
+            if (cancellationToken.IsCancellationRequested) return default;
+
             // You can add the other API calls (like fetching widget URLs) similarly if needed
             return (videoId,text);
             //return videoId;

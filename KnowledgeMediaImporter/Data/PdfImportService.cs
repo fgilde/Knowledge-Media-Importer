@@ -11,8 +11,10 @@ public class PdfImportService: IImportService
         return contentType == "application/pdf";
     }
 
-    public Task<string> GetKnowledgeTextAsync(byte[] fileData, Action<string, double> progress)
+    public Task<string> GetKnowledgeTextAsync(byte[] fileData,CancellationToken cancellationToken, Action<string, double> progress)
     {
+        if (cancellationToken.IsCancellationRequested) return default;
+
         using var stream = new MemoryStream(fileData);
         stream.Position = 0;
         Document pdfDocument = new Document(stream);
@@ -22,7 +24,7 @@ public class PdfImportService: IImportService
         return Task.FromResult(extractedText);
     }
 
-    public Task<string> AfterPrepareAsync(string text)
+    public Task<string> AfterPrepareAsync(string text, CancellationToken cancellationToken)
     {
         return Task.FromResult(string.Empty);
     }

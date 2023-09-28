@@ -10,8 +10,10 @@ public class WordImportService: IImportService
         return contentType != "application/pdf" && MimeType.Matches(contentType, MimeType.DocumentTypes);
     }
 
-    public async Task<string> GetKnowledgeTextAsync(byte[] fileData, Action<string, double> progress)
+    public async Task<string> GetKnowledgeTextAsync(byte[] fileData, CancellationToken cancellationToken, Action<string, double> progress)
     {
+        if (cancellationToken.IsCancellationRequested) return default;
+
         using var stream = new MemoryStream(fileData);
         stream.Position = 0;
         Parser parser = new Parser(stream);
@@ -20,7 +22,7 @@ public class WordImportService: IImportService
         return await reader.ReadToEndAsync();
     }
 
-    public Task<string> AfterPrepareAsync(string text)
+    public Task<string> AfterPrepareAsync(string text, CancellationToken cancellationToken)
     {
         return Task.FromResult(text);
     }

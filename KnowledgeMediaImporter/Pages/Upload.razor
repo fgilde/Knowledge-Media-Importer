@@ -6,8 +6,15 @@
 <MudText Typo="Typo.h4" Color="Color.Primary">Upload file to create Knowledge Article</MudText>
 
 <MudButton Class="m-5" Variant="Variant.Filled" Disabled="@_running" Color="Color.Primary" OnClick="@UploadClick">Upload File</MudButton>
+<br/>
 
-@if(_running){
-    <MudText>@ProgressText</MudText>
-    <MudProgressLinear Color="Color.Secondary" Value="@ProgressValue" Class="my-7" />
+
+@if (_running)
+{
+    @foreach (var run in _progresses)
+    {
+        <MudText Style="display: inline-block">@($"{run.Key} - {run.Value.Text}")</MudText>
+        <MudIconButton Style="display: inline-block" Icon="@Icons.Material.Filled.Cancel" OnClick="@(() => Cancel(run))"></MudIconButton>
+        <MudProgressLinear Color="Color.Secondary" Value="@run.Value.Value" Class="my-7"/>
+    }
 }

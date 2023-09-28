@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using KnowledgeMedia.Core;
 using KnowledgeMediaImporter.Data;
 using Microsoft.AspNetCore.Components;
@@ -12,9 +13,10 @@ namespace KnowledgeMediaImporter.Pages;
 public partial class Upload
 {
     private bool _running;
-    public string ProgressText { get; set; }
-    public int ProgressValue { get; set; }
-    private string fileName;
+
+
+    private ConcurrentDictionary<string, Progress> _progresses = new();
+    
     [Inject] private IJSRuntime JS { get; set; }
     [Inject] private IServiceProvider ServiceProvider { get; set; }
     [Inject] private IDialogService DialogService { get; set; }
@@ -31,11 +33,12 @@ public partial class Upload
         var res =await DialogService.ShowComponentInDialogAsync<MudExUploadEdit<UploadableFile>>("Upload content", "Upload content files as zip or separate",
             uploadEdit =>
             {
-                uploadEdit.AllowMultiple = false;
+                uploadEdit.AllowMultiple = true;
                 uploadEdit.MinHeight = 400;
                 uploadEdit.AutoExtractZip = true;
                 uploadEdit.MimeTypes = Array.Empty<string>();
                 uploadEdit.MimeRestrictionType = MimeTypeRestrictionType.BlackList;
+                uploadEdit.AutoExtractZip = true;
             }, parameters, options =>
             {
                 options.Resizeable = true;
@@ -45,8 +48,14 @@ public partial class Upload
             });
         if (!res.DialogResult.Canceled)
         {
-            fileName = res.Component.UploadRequest.FileName;
-            _ = ExecuteImport(FindImporter(res.Component.UploadRequest), res.Component.UploadRequest);
+            var files = res.Component.UploadRequests;
+            var tasks = (from file in files select new{Importer = FindImporter(file), File = file} 
+                into importer where importer != null 
+                select ExecuteImport(importer.Importer, importer.File )).ToList();
+            _running = true;
+            await Task.WhenAll(tasks);
+            _progresses?.Clear();
+            _running = false;
         }
     }
 
@@ -57,16 +66,29 @@ public partial class Upload
             await ShowUnsupportedInfoAsync(file);
             return;
         }
-        _running = true;
-        StateHasChanged();
-        string text = await service.GetKnowledgeTextAsync(file.Data, UpdateStatus);
-        var result = await GptService.PrepareContentAsync(text, UpdateStatus);
-        result.Content = await service.AfterPrepareAsync(result.Content);
-        var url = await SabioService.CreateArticleAsync(result.Title, result.Content, UpdateStatus);
-        UpdateStatus("Done", 1);
-        _running = false;
-        StateHasChanged();
-        await JS.InvokeVoidAsync("window.open", url);
+
+        try
+        {
+            var cts = new CancellationTokenSource();
+            cts.Token.Register(() =>
+            {
+                _progresses.TryRemove(file.FileName, out _);
+            });
+            _progresses.TryAdd(file.FileName, new Progress(cts));
+            StateHasChanged();
+            string text = await service.GetKnowledgeTextAsync(file.Data, cts.Token, (s,v) => UpdateStatus(file.FileName, s, v));
+            var result = await GptService.PrepareContentAsync(text, cts.Token, (s,v) => UpdateStatus(file.FileName, s, v));
+            result.Content = await service.AfterPrepareAsync(result.Content, cts.Token);
+            var url = await SabioService.CreateArticleAsync(result.Title, result.Content, cts.Token, (s,v) => UpdateStatus(file.FileName, s, v));
+            if(!cts.IsCancellationRequested)
+                UpdateStatus(file.FileName, "Done", 1);
+            StateHasChanged();
+        }
+        finally
+        {
+            _progresses.TryRemove(file.FileName, out _);
+        }
+        //await JS.InvokeVoidAsync("window.open", url);
     }
 
     private async Task ShowUnsupportedInfoAsync(IUploadableFile file)
@@ -78,15 +100,31 @@ public partial class Upload
     }
     
 
-    private void UpdateStatus(string text, double progress)
+    private void UpdateStatus(string file, string text, double progress)
     {
-        ProgressText = $"{fileName} - {text}";
-        ProgressValue = (int)(progress * 100);
-        StateHasChanged();
+        try
+        {
+            if (_progresses.TryGetValue(file, out var p))
+            {
+                p.Text = text;
+                p.Value = (int)(progress * 100);
+                StateHasChanged();
+            }
+        }
+        catch 
+        {
+        }
     }
 
     private IImportService FindImporter(IUploadableFile file)
     {
         return ServiceProvider.GetServices<IImportService>().FirstOrDefault(s => s.CanHandle(file.ContentType));
+    }
+
+    private Task Cancel(KeyValuePair<string, Progress> run)
+    {
+        run.Value.Cancellation.Cancel();
+        UpdateStatus(run.Key, "Cancelled", 1);
+        return Task.CompletedTask;
     }
 }
