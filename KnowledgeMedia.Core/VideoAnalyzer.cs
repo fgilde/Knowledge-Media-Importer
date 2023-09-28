@@ -26,11 +26,11 @@ public class VideoAnalyzer
 
             progress("Upload video", 0.2);
 
-           // var videoId = await UploadVideoDataAsync(client, data, accountAccessToken);
+            //var videoId = await UploadVideoDataAsync(client, data, accountAccessToken);
            progress("Analyzing video", 0.3);
            if (cancellationToken.IsCancellationRequested) return default;
 
-            // await WaitForVideoProcessingToCompleteAsync(client, videoId, accountAccessToken);
+             //await WaitForVideoProcessingToCompleteAsync(client, videoId, accountAccessToken);
             if (cancellationToken.IsCancellationRequested) return default;
 
             var videoId = "7346e6835d";

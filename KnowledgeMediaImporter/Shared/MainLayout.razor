@@ -1,32 +1,38 @@
 ﻿@using MudBlazor.Extensions.Core
 @inherits LayoutComponentBase
 
-<MudThemeProvider IsDarkMode="false" Theme="@ClientTheme.CodeBlue" />
-<MudDialogProvider />
+<MudThemeProvider IsDarkMode="false" Theme="@ClientTheme.CodeBlue"/>
+<MudDialogProvider/>
 <MudExTaskBar BorderColor="MudExColor.Warning" HideContentWhenCollapsed="true"/>
-<MudSnackbarProvider />
+<MudSnackbarProvider/>
 
 <MudLayout>
-    
+
     <MudAppBar Elevation="0">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())"/>
-        <MudText Typo="Typo.h3">rAIce</MudText>
+        <MudText Typo="Typo.h3">
+            <div style="display: flex;">
+                <MudText Typo="Typo.h3">r</MudText>
+                <MudExGradientText Palette="@(new [] { MudExColor.Error, MudExColor.Warning })" Radius="255" Style="display: inline-block" Typo="Typo.h3">AI</MudExGradientText>
+                <MudText Typo="Typo.h3">ce</MudText>
+            </div>
+        </MudText>
         <MudText Class="ml-3" Typo="Typo.subtitle2">Rapid AI Information Conversion Engine</MudText>
         <MudSpacer/>
-        
-        <MudExDivider Size="2" Vertical="true" />
-        
+
+        <MudExDivider Size="2" Vertical="true"/>
+
         <MudHidden Breakpoint="Breakpoint.SmAndDown">
-            <MudIconButton Icon="@Icons.Material.Outlined.Info" Size="Size.Small" Color="Color.Inherit" OnClick="@InfoClick" />
+            <MudIconButton Icon="@Icons.Material.Outlined.Info" Size="Size.Small" Color="Color.Inherit" OnClick="@InfoClick"/>
         </MudHidden>
-        
+
     </MudAppBar>
     <MudDrawer @bind-Open="_drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Docked" Variant="DrawerVariant.Responsive">
-  
+
         <MudDrawerHeader>
             <img src="logo-sw-knowledge.svg"/>
         </MudDrawerHeader>
-        
+
         <NavMenu/>
     </MudDrawer>
     <MudMainContent>
