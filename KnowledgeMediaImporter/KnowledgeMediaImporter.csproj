@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>aspnet-KnowledgeMediaImporter-D88027A4-846F-4C82-91B7-14397BC9AFCE</UserSecretsId>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.5" NoWarn="NU1605"/>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="7.0.5" NoWarn="NU1605"/>
+        <PackageReference Include="Microsoft.Identity.Web" Version="1.16.0"/>
+        <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.16.0"/>
+        <PackageReference Include="MudBlazor" Version="6.10.0" />
+        <PackageReference Include="MudBlazor.Extensions" Version="1.7.70-prev-2309251813-try-mudex" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\KnowledgeMedia.Core\KnowledgeMedia.Core.csproj" />
+    </ItemGroup>
+
+</Project>

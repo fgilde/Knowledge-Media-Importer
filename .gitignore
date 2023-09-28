@@ -1,0 +1,5 @@
+/KnowledgeMediaImporter/bin/*
+/KnowledgeMediaImporter/obj/*
+/KnowledgeMedia.Core/obj/*
+/KnowledgeMedia.Core/bin/*
+/KnowledgeMediaImporter/.idea/*
