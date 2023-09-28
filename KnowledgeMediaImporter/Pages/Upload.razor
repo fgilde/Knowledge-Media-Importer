@@ -1,8 +1,13 @@
 ﻿@page "/upload"
 @using KnowledgeMedia.Core
 
-<PageTitle>Moin</PageTitle>
+<PageTitle>rAIce - Upload</PageTitle>
 
-<h1>Moinsen hier files rein</h1>
+<MudText Typo="Typo.h4" Color="Color.Primary">Upload file to create Knowledge Article</MudText>
 
-<MudButton Color="Color.Warning" OnClick="@UploadClick">Upload video</MudButton>
+<MudButton Class="m-5" Variant="Variant.Filled" Disabled="@_running" Color="Color.Primary" OnClick="@UploadClick">Upload File</MudButton>
+
+@if(_running){
+    <MudText>@ProgressText</MudText>
+    <MudProgressLinear Color="Color.Secondary" Value="@ProgressValue" Class="my-7" />
+}

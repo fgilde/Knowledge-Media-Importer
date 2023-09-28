@@ -9,6 +9,8 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Aspose.PDF" Version="23.9.0" />
+        <PackageReference Include="GroupDocs.Parser" Version="23.8.0" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.5" NoWarn="NU1605"/>
         <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="7.0.5" NoWarn="NU1605"/>
         <PackageReference Include="Microsoft.Identity.Web" Version="1.16.0"/>

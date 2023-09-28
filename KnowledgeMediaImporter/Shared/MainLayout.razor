@@ -1,23 +1,53 @@
-﻿@inherits LayoutComponentBase
+﻿@using MudBlazor.Extensions.Core
+@inherits LayoutComponentBase
 
-<MudThemeProvider/>
-<MudDialogProvider/>
-<MudSnackbarProvider/>
-<PageTitle>KnowledgeMediaImporter</PageTitle>
+<MudThemeProvider IsDarkMode="false" Theme="@ClientTheme.CodeBlue" />
+<MudDialogProvider />
+<MudExTaskBar BorderColor="MudExColor.Warning" HideContentWhenCollapsed="true"/>
+<MudSnackbarProvider />
 
-<div class="page">
-    <div class="sidebar">
+<MudLayout>
+    
+    <MudAppBar Elevation="0">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())"/>
+        <MudText Typo="Typo.h3">rAIce</MudText>
+        <MudText Class="ml-3" Typo="Typo.subtitle2">Rapid AI Information Conversion Engine</MudText>
+        <MudSpacer/>
+        
+        <MudExDivider Size="2" Vertical="true" />
+        
+        <MudHidden Breakpoint="Breakpoint.SmAndDown">
+            <MudIconButton Icon="@Icons.Material.Outlined.Info" Size="Size.Small" Color="Color.Inherit" OnClick="@InfoClick" />
+        </MudHidden>
+        
+    </MudAppBar>
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Docked" Variant="DrawerVariant.Responsive">
+  
+        <MudDrawerHeader>
+            <img src="logo-sw-knowledge.svg"/>
+        </MudDrawerHeader>
+        
         <NavMenu/>
-    </div>
-
-    <main>
-        <div class="top-row px-4 auth">
-            <LoginDisplay/>
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
+    </MudDrawer>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="my-sample-main-content-container my-4 pt-4">
             @Body
-        </article>
-    </main>
-</div>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code{
+    private bool _drawerOpen;
+
+    private Task DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+        return Task.CompletedTask;
+    }
+
+    private Task InfoClick()
+    {
+        return Task.CompletedTask;
+    }
+
+}

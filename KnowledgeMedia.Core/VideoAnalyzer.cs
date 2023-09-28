@@ -16,25 +16,38 @@ public class VideoAnalyzer
         System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls12;
     }
 
-    public async Task<string> UploadVideoAsync(byte[] data)
+    public async Task<(string VideoId, string Transcript)> UploadVideoAsync(byte[] data, Action<string, double> progress)
     {
         using (var client = CreateHttpClient())
         {
+            progress("Create connection", 0.1);
             var accountAccessToken = await GetAccountAccessTokenAsync(client);
+            
+            progress("Upload video", 0.2);
 
            // var videoId = await UploadVideoDataAsync(client, data, accountAccessToken);
+           progress("Analyzing video", 0.3);
 
             // await WaitForVideoProcessingToCompleteAsync(client, videoId, accountAccessToken);
 
             var videoId = "7346e6835d";
-            var url = $"https://api.videoindexer.ai/{Location}/Accounts/{AccountId}/Videos/{videoId}/Index?accessToken={accountAccessToken}";
-            var result = await client.GetAsync(url);
-            var content = await result.Content.ReadFromJsonAsync<IndexResult>();
+            progress("Read video info and generate transcription", 0.4);
+
+            var content = await ReadVideoInfoAsync(client, videoId, accountAccessToken);
             var text = string.Join(Environment.NewLine, content.videos.First().insights.transcript.Select(t => t.text));
-            var playerUrl = await GetInsightsWidgetUrlAsync(client, videoId, accountAccessToken);
+            
             // You can add the other API calls (like fetching widget URLs) similarly if needed
-            return videoId;
+            return (videoId,text);
+            //return videoId;
         }
+    }
+
+    private static async Task<IndexResult?> ReadVideoInfoAsync(HttpClient client, string videoId, string accountAccessToken)
+    {
+        var url = $"https://api.videoindexer.ai/{Location}/Accounts/{AccountId}/Videos/{videoId}/Index?accessToken={accountAccessToken}";
+        var result = await client.GetAsync(url);
+        var content = await result.Content.ReadFromJsonAsync<IndexResult>();
+        return content;
     }
 
     private HttpClient CreateHttpClient()
@@ -69,17 +82,32 @@ public class VideoAnalyzer
         return JsonConvert.DeserializeObject<dynamic>(uploadResult)["id"];
     }
     
-    public async Task<Uri> GetInsightsWidgetUrlAsync(HttpClient client, string videoId, string accessToken)
+    public async Task<Uri> GetInsightsWidgetUrlAsync(string videoId, HttpClient? client = null)
     {
-        var insightsWidgetRequestResult = await client.GetAsync($"{ApiUrl}/{Location}/Accounts/{AccountId}/Videos/{videoId}/InsightsWidget?accessToken={accessToken}&widgetType=Keywords&allowEdit=true");
+        client ??= CreateHttpClient();
+        var videoAccessToken = await GetVideoAccessTokenAsync(client, videoId);
+        var insightsWidgetRequestResult = await client.GetAsync($"{ApiUrl}/{Location}/Accounts/{AccountId}/Videos/{videoId}/InsightsWidget?accessToken={videoAccessToken}&widgetType=Keywords&allowEdit=true");
         return insightsWidgetRequestResult.Headers.Location;
     }
 
-    public async Task<Uri> GetPlayerWidgetUrlAsync(HttpClient client, string videoId, string accessToken)
+    public async Task<Uri> GetPlayerWidgetUrlAsync(string videoId, HttpClient? client = null)
     {
-        var playerWidgetRequestResult = await client.GetAsync($"{ApiUrl}/{Location}/Accounts/{AccountId}/Videos/{videoId}/PlayerWidget?accessToken={accessToken}");
+        client ??= CreateHttpClient();
+        var videoAccessToken = await GetVideoAccessTokenAsync(client, videoId);
+        var playerWidgetRequestResult = await client.GetAsync($"{ApiUrl}/{Location}/Accounts/{AccountId}/Videos/{videoId}/PlayerWidget?accessToken={videoAccessToken}");
         return playerWidgetRequestResult.Headers.Location;
     }
+    
+    private async Task<string> GetVideoAccessTokenAsync(HttpClient client, string videoId)
+    {
+        client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", ApiKey);
+        var videoTokenRequestResult = await client.GetAsync($"{ApiUrl}/auth/{Location}/Accounts/{AccountId}/Videos/{videoId}/AccessToken?allowEdit=true");
+        client.DefaultRequestHeaders.Remove("Ocp-Apim-Subscription-Key");
+    
+        var videoAccessToken = await videoTokenRequestResult.Content.ReadAsStringAsync();
+        return videoAccessToken.Replace("\"", "");
+    }
+
 
     private async Task WaitForVideoProcessingToCompleteAsync(HttpClient client, string videoId, string accountAccessToken)
     {

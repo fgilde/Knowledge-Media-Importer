@@ -1,0 +1,52 @@
+using SABIO.ClientApi.Core;
+using SABIO.ClientApi.Core.Api;
+using SABIO.ClientApi.Extensions;
+using SABIO.ClientApi.Responses;
+using SABIO.ClientApi.Responses.Types;
+
+namespace KnowledgeMedia.Core;
+
+public class SabioService
+{
+    const string sabioUrl = "https://maestro-anna-knowledge.labs.swops.cloud/sabio-web/services";
+    const string realm = "qa-test";
+    const string userName = "4nils";
+    const string pw = "sonne";
+    
+    public async Task<string> CreateArticleAsync(string title, string text, Action<string, double> progress)
+    {
+        var client = new SabioClient(sabioUrl, realm);
+        await client.Api<AuthenticationApi>().LoginAsync(userName, pw);
+        
+        var tree = client.Api<TreeApi>().TreeAsync().Result;
+        progress("Connecting to knowledge", 0.8);
+
+        var nodes = new[]
+        {
+            tree.Data.Result.Children.First().Children.First().Children.First(),
+            tree.Data.Result.Children[2].Children.First().Children.First()
+        };
+        User user = await client.Apis.Authentication.GetCurrentUserAsync();
+        Text textToCreate = new Text
+        {
+            Title = title,
+            Paths = nodes.ToPathsArray(),
+            Branches = nodes.GetUniqueBranches().ToArray(),
+            Fragments = new[]
+            {
+                new Fragment {
+                    Content = text,
+                    Branches = nodes.GetUniqueBranches().ToArray(),
+                }
+            },
+            CreatedBy = user,
+            Group = user.Groups.First(g => g.Name == "Leiter Redaktion")
+        };
+        progress("Create Article", 0.9);
+
+        var created = await client.Apis.Texts.CreateAsync(textToCreate);
+        progress(created.Success ? "Article created successfully" : "Failed to create Article", 0.93);
+        var url =  $"https://maestro-anna-knowledge.labs.swops.cloud/sabio5/#!/search/text/_id/{created.Data.Result.Id}";
+        return url;
+    }
+}

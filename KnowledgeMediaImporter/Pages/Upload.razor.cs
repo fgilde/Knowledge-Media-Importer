@@ -1,5 +1,7 @@
+using KnowledgeMedia.Core;
 using KnowledgeMediaImporter.Data;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using MudBlazor;
 using MudBlazor.Extensions;
 using MudBlazor.Extensions.Components;
@@ -9,8 +11,15 @@ namespace KnowledgeMediaImporter.Pages;
 
 public partial class Upload
 {
+    private bool _running;
+    public string ProgressText { get; set; }
+    public int ProgressValue { get; set; }
+    private string fileName;
+    [Inject] private IJSRuntime JS { get; set; }
     [Inject] private IServiceProvider ServiceProvider { get; set; }
     [Inject] private IDialogService DialogService { get; set; }
+    [Inject] private SabioService SabioService { get; set; }
+    [Inject] private GptService GptService { get; set; }
     
     private async Task UploadClick()
     {
@@ -36,6 +45,7 @@ public partial class Upload
             });
         if (!res.DialogResult.Canceled)
         {
+            fileName = res.Component.UploadRequest.FileName;
             _ = ExecuteImport(FindImporter(res.Component.UploadRequest), res.Component.UploadRequest);
         }
     }
@@ -43,9 +53,36 @@ public partial class Upload
     private async Task ExecuteImport(IImportService service, IUploadableFile file)
     {
         if (service == null)
-            throw new NotSupportedException("Ham wa nicht");
-        string text = await service.CreateKnowledgeTextAsync(file.Data);
-        // TODO: hämmer text to sabio
+        {
+            await ShowUnsupportedInfoAsync(file);
+            return;
+        }
+        _running = true;
+        StateHasChanged();
+        string text = await service.GetKnowledgeTextAsync(file.Data, UpdateStatus);
+        var result = await GptService.PrepareContentAsync(text, UpdateStatus);
+        result.Content = await service.AfterPrepareAsync(result.Content);
+        var url = await SabioService.CreateArticleAsync(result.Title, result.Content, UpdateStatus);
+        UpdateStatus("Done", 1);
+        _running = false;
+        StateHasChanged();
+        await JS.InvokeVoidAsync("window.open", url);
+    }
+
+    private async Task ShowUnsupportedInfoAsync(IUploadableFile file)
+    {
+        var mboxOptions = new MessageBoxOptions();
+        mboxOptions.Title = "Not supported";
+        mboxOptions.Message = $"There is no importer registered for content type {file.ContentType}";
+        await DialogService.ShowMessageBoxEx(mboxOptions);
+    }
+    
+
+    private void UpdateStatus(string text, double progress)
+    {
+        ProgressText = $"{fileName} - {text}";
+        ProgressValue = (int)(progress * 100);
+        StateHasChanged();
     }
 
     private IImportService FindImporter(IUploadableFile file)
