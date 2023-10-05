@@ -8,7 +8,7 @@ namespace KnowledgeMedia.Core;
 
 public class SabioService
 {
-    const string sabioUrl = "https://maestro-anna-knowledge.labs.swops.cloud/sabio-web/services";
+    const string sabioUrl = "https://maestro-fg-knowledge.labs.swops.cloud/sabio-web/services";
     const string realm = "qa-test";
     const string userName = "4nils";
     const string pw = "sonne";

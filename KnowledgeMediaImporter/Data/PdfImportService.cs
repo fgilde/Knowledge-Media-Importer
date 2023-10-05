@@ -16,6 +16,8 @@ public class PdfImportService: IImportService
     {
         if (cancellationToken.IsCancellationRequested) return default;
 
+        progress("Read pdf pages", 0.2);
+
         using var memoryStream = new MemoryStream(fileData);
         using var pdf = PdfDocument.Open(memoryStream);
         var textBuilder = new System.Text.StringBuilder();
@@ -25,6 +27,7 @@ public class PdfImportService: IImportService
             var currentPage = pdf.GetPage(page);
             textBuilder.AppendLine(currentPage.Text);
         }
+        progress("Read pdf content", 0.3);
 
         return Task.FromResult(textBuilder.ToString());
     }

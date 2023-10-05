@@ -74,7 +74,7 @@ public partial class Upload
             {
                 _progresses.TryRemove(file.FileName, out _);
             });
-            _progresses.TryAdd(file.FileName, new Progress(cts) {Text = "Initializing...", Value = 0});
+            _progresses.TryAdd(file.FileName, new Progress(cts) {Text = "Initializing...", Value = 1});
             StateHasChanged();
             string text = await service.GetKnowledgeTextAsync(file.Data, cts.Token, (s,v) => UpdateStatus(file.FileName, s, v));
             var result = await GptService.PrepareContentAsync(text, cts.Token, (s,v) => UpdateStatus(file.FileName, s, v));

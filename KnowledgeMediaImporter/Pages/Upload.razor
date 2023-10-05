@@ -3,10 +3,12 @@
 
 <PageTitle>rAIce - Upload</PageTitle>
 
-<MudText Typo="Typo.h4" Color="Color.Primary">Upload file to create Knowledge Article</MudText>
+<div style="display: flex;">
+    <MudText Typo="Typo.h4" Color="Color.Primary">Upload file(s) to summar</MudText><MudExGradientText Typo="Typo.h4">AI</MudExGradientText><MudText Color="Color.Primary" Typo="Typo.h4">ce as Knowledge Article</MudText>
+</div>
 
 <MudButton Class="m-5" Variant="Variant.Filled" Disabled="@_running" Color="Color.Primary" OnClick="@UploadClick">Upload File</MudButton>
-<br/>
+<br />
 
 
 @if (_running)
@@ -15,6 +17,6 @@
     {
         <MudText Style="display: inline-block">@($"{run.Key} - {run.Value.Text}")</MudText>
         <MudIconButton Style="display: inline-block" Icon="@Icons.Material.Filled.Cancel" OnClick="@(() => Cancel(run))"></MudIconButton>
-        <MudProgressLinear Color="Color.Secondary" Value="@run.Value.Value" Class="my-7"/>
+        <MudProgressLinear Color="Color.Secondary" Value="@run.Value.Value" Class="my-7" />
     }
 }
