@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using KnowledgeMedia.Core;
 using KnowledgeMediaImporter.Data;
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
 using MudBlazor;
 using MudBlazor.Extensions;
 using MudBlazor.Extensions.Components;
@@ -17,7 +16,6 @@ public partial class Upload
 
     private ConcurrentDictionary<string, Progress> _progresses = new();
     
-    [Inject] private IJSRuntime JS { get; set; }
     [Inject] private IServiceProvider ServiceProvider { get; set; }
     [Inject] private IDialogService DialogService { get; set; }
     [Inject] private SabioService SabioService { get; set; }
@@ -35,10 +33,10 @@ public partial class Upload
             {
                 uploadEdit.AllowMultiple = true;
                 uploadEdit.MinHeight = 400;
-                uploadEdit.AutoExtractZip = true;
+                uploadEdit.AutoExtractArchive = true;
                 uploadEdit.MimeTypes = Array.Empty<string>();
-                uploadEdit.MimeRestrictionType = MimeTypeRestrictionType.BlackList;
-                uploadEdit.AutoExtractZip = true;
+                uploadEdit.MimeRestrictionType = RestrictionType.BlackList;
+                uploadEdit.StreamUrlHandling = StreamUrlHandling.BlobUrl;
             }, parameters, options =>
             {
                 options.Resizeable = true;
@@ -53,6 +51,7 @@ public partial class Upload
                 into importer where importer != null 
                 select ExecuteImport(importer.Importer, importer.File )).ToList();
             _running = true;
+            StateHasChanged();
             await Task.WhenAll(tasks);
             _progresses?.Clear();
             _running = false;
@@ -76,10 +75,12 @@ public partial class Upload
             });
             _progresses.TryAdd(file.FileName, new Progress(cts) {Text = "Initializing...", Value = 1});
             StateHasChanged();
+            await Task.Delay(10);
             string text = await service.GetKnowledgeTextAsync(file.Data, cts.Token, (s,v) => UpdateStatus(file.FileName, s, v));
             var result = await GptService.PrepareContentAsync(text, cts.Token, (s,v) => UpdateStatus(file.FileName, s, v));
             result.Content = await service.AfterPrepareAsync(result.Content, cts.Token);
-            var url = await SabioService.CreateArticleAsync(result.Title, result.Content, cts.Token, (s,v) => UpdateStatus(file.FileName, s, v));
+            await SabioService.CreateArticleAsync(result.Title, result.Content, cts.Token, (s,v) => UpdateStatus(file.FileName, s, v));
+            
             if(!cts.IsCancellationRequested)
                 UpdateStatus(file.FileName, "Done", 1);
             StateHasChanged();
@@ -88,15 +89,16 @@ public partial class Upload
         {
             _progresses.TryRemove(file.FileName, out _);
         }
-        //await JS.InvokeVoidAsync("window.open", url);
     }
 
     private async Task ShowUnsupportedInfoAsync(IUploadableFile file)
     {
-        var mboxOptions = new MessageBoxOptions();
-        mboxOptions.Title = "Not supported";
-        mboxOptions.Message = $"There is no importer registered for content type {file.ContentType}";
-        await DialogService.ShowMessageBoxEx(mboxOptions);
+        var options = new MessageBoxOptions
+        {
+            Title = "Not supported",
+            Message = $"There is no importer registered for content type {file.ContentType}"
+        };
+        await DialogService.ShowMessageBoxEx(options);
     }
     
 

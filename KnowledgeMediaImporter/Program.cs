@@ -1,9 +1,11 @@
 using KnowledgeMedia.Core;
 using KnowledgeMediaImporter.Data;
 using MudBlazor.Extensions;
+using KnowledgeMedia.Core.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<ServiceSettings>(builder.Configuration.GetSection("Services"));
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();

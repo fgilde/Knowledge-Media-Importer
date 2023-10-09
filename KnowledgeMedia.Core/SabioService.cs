@@ -1,3 +1,5 @@
+using KnowledgeMedia.Core.Configuration;
+using Microsoft.Extensions.Options;
 using SABIO.ClientApi.Core;
 using SABIO.ClientApi.Core.Api;
 using SABIO.ClientApi.Extensions;
@@ -8,19 +10,24 @@ namespace KnowledgeMedia.Core;
 
 public class SabioService
 {
-    const string sabioUrl = "https://maestro-fg-knowledge.labs.swops.cloud/sabio-web/services";
-    const string realm = "qa-test";
-    const string userName = "4nils";
-    const string pw = "sonne";
+    private SabioClient? client;
+    private readonly KnowledgeSettings _knowledge;
 
-    private SabioClient? client = null;
-    
+    public SabioService(IOptions<ServiceSettings> serviceSettings)
+    {
+        
+        _knowledge = serviceSettings.Value.Knowledge;
+    }
+
     public async Task LoginAsync()
     {
         if (client == null)
         {
-            client = new SabioClient(sabioUrl, realm);
-            await client.Api<AuthenticationApi>().LoginAsync(userName, pw);
+            client = new SabioClient(_knowledge.Url, _knowledge.Realm);
+            if(!string.IsNullOrEmpty(_knowledge.ApiKey))
+                await client.Api<AuthenticationApi>().LoginAsync(_knowledge.ApiKey);
+            else
+                await client.Api<AuthenticationApi>().LoginAsync(_knowledge.User, _knowledge.Password);
         }
     }
 
@@ -52,7 +59,7 @@ public class SabioService
                 }
             },
             CreatedBy = user,
-            Group = user.Groups.First(g => g.Name == "Leiter Redaktion")
+            Group = user.Groups.First()
         };
         progress("Create Article", 0.9);
         if (cancellationToken.IsCancellationRequested) return string.Empty;

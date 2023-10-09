@@ -1,4 +1,6 @@
 using KnowledgeMedia.Core;
+using KnowledgeMedia.Core.Configuration;
+using Microsoft.Extensions.Options;
 using Nextended.Core;
 
 namespace KnowledgeMediaImporter.Data;
@@ -6,6 +8,7 @@ namespace KnowledgeMediaImporter.Data;
 
 public class VideoImportService: IImportService
 {
+    private readonly IOptions<ServiceSettings> _serviceSettings;
     private string _videoId;
     private VideoAnalyzer _analyzer;
     public bool CanHandle(string contentType)
@@ -13,9 +16,14 @@ public class VideoImportService: IImportService
         return MimeType.Matches(contentType, MimeType.VideoTypes);
     }
 
+    public VideoImportService(IOptions<ServiceSettings> serviceSettings)
+    {
+        _serviceSettings = serviceSettings;
+    }
+
     public async Task<string> GetKnowledgeTextAsync(byte[] fileData, CancellationToken cancellationToken, Action<string, double> progress)
     {
-        _analyzer= new VideoAnalyzer();
+        _analyzer= new VideoAnalyzer(_serviceSettings);
         var result = await _analyzer.UploadVideoAsync(fileData, progress, cancellationToken);
         _videoId = result.VideoId;
         return result.Transcript;
