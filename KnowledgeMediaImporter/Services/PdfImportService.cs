@@ -1,18 +1,16 @@
-using Aspose.Pdf;
-using Aspose.Pdf.Text;
-using Nextended.Core;
+using KnowledgeMediaImporter.Contracts;
 using UglyToad.PdfPig;
 
-namespace KnowledgeMediaImporter.Data;
+namespace KnowledgeMediaImporter.Services;
 
-public class PdfImportService: IImportService
+public class PdfImportService : IImportService
 {
     public bool CanHandle(string contentType)
     {
         return contentType == "application/pdf";
     }
 
-    public Task<string> GetKnowledgeTextAsync(byte[] fileData,CancellationToken cancellationToken, Action<string, double> progress)
+    public Task<string> GetKnowledgeTextAsync(byte[] fileData, CancellationToken cancellationToken, Action<string, double> progress)
     {
         if (cancellationToken.IsCancellationRequested) return default;
 

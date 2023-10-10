@@ -1,0 +1,9 @@
+﻿@page "/settings"
+@using KnowledgeMediaImporter.Configuration
+
+
+<PageTitle>rAIce - Settings</PageTitle>
+
+<MudExObjectEdit T="ServiceSettings" ValueChanged="@SaveSettingsAsync" Value="_serviceSettings.Value">
+
+</MudExObjectEdit>

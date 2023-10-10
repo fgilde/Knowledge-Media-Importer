@@ -1,19 +1,26 @@
-using KnowledgeMedia.Core;
-using KnowledgeMediaImporter.Data;
 using MudBlazor.Extensions;
-using KnowledgeMedia.Core.Configuration;
+using KnowledgeMediaImporter;
+using KnowledgeMediaImporter.Configuration;
+using KnowledgeMediaImporter.Contracts;
+using KnowledgeMediaImporter.Services;
+using MudBlazor.Extensions.Components;
+using Nextended.Core.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Configuration.AddEnvironmentVariables();
+builder.Configuration.AddJsonFile(Constants.AppSettingsFile, optional: true, reloadOnChange: true);
+builder.Configuration.AddJsonFile(Constants.AppSettingsUserFile, optional: true, reloadOnChange: true);
 builder.Services.Configure<ServiceSettings>(builder.Configuration.GetSection("Services"));
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
 builder.Services.AddMudServicesWithExtensions();
-builder.Services.AddScoped<IImportService, VideoImportService>();
-builder.Services.AddScoped<IImportService, PdfImportService>();
-builder.Services.AddScoped<IImportService, WordImportService>();
+builder.Services.AddScoped<IFileProcessingService, FileProcessingService>();
+builder.Services.RegisterAllImplementationsOf<IImportService>(lifeTime: ServiceLifetime.Scoped);
+
+
 builder.Services.AddSingleton<SabioService>();
 builder.Services.AddSingleton<GptService>();
 

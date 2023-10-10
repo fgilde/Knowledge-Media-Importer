@@ -1,5 +1,4 @@
 ﻿@page "/upload"
-@using KnowledgeMedia.Core
 
 <PageTitle>rAIce - Upload</PageTitle>
 
@@ -7,16 +6,16 @@
     <MudText Typo="Typo.h4" Color="Color.Primary">Upload file(s) to summar</MudText><MudExGradientText Typo="Typo.h4">AI</MudExGradientText><MudText Color="Color.Primary" Typo="Typo.h4">ce as Knowledge Article</MudText>
 </div>
 
-<MudButton Class="m-5" Variant="Variant.Filled" Disabled="@_running" Color="Color.Primary" OnClick="@UploadClick">Upload File</MudButton>
+<MudButton Class="m-5" Variant="Variant.Filled" Color="Color.Primary" OnClick="@UploadClick">Upload File</MudButton>
 <br />
 
 
-@if (_running)
+@if (_progresses?.Any() == true)
 {
     @foreach (var run in _progresses)
     {
-        <MudText Style="display: inline-block">@($"{run.Key} - {run.Value.Text}")</MudText>
+        <MudText Style="display: inline-block">@($"{run.File.FileName} - {run.Text}")</MudText>
         <MudIconButton Style="display: inline-block" Icon="@Icons.Material.Filled.Cancel" OnClick="@(() => Cancel(run))"></MudIconButton>
-        <MudProgressLinear Color="Color.Secondary" Value="@run.Value.Value" Class="my-7" />
+        <MudProgressLinear Color="Color.Secondary" Value="@run.Value" Class="my-7" />
     }
 }

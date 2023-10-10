@@ -1,4 +1,4 @@
-namespace KnowledgeMedia.Core;
+namespace KnowledgeMediaImporter.Model;
 
 public class IndexResult
 {

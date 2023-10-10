@@ -1,4 +1,4 @@
-﻿namespace KnowledgeMedia.Core.Configuration;
+﻿namespace KnowledgeMediaImporter.Configuration;
 
 public class ServiceSettings
 {

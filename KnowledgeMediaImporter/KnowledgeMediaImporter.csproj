@@ -15,19 +15,17 @@
         <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="7.0.5" NoWarn="NU1605" />
         <PackageReference Include="Microsoft.Identity.Web" Version="1.16.0" />
         <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.16.0" />
-        <PackageReference Include="MudBlazor" Version="6.10.0" />
-        <PackageReference Include="MudBlazor.Extensions" Version="1.7.73" />
+        <PackageReference Include="MudBlazor" Version="6.11.0" />
+        <PackageReference Include="MudBlazor.Extensions" Version="1.7.74" />
+        <PackageReference Include="OpenAI-DotNet" Version="6.5.0" />
         <PackageReference Include="PdfPig" Version="0.1.9-alpha-20230914-d59d2" />
+        <PackageReference Include="SABIO.ClientApi" Version="1.0.2" />
     </ItemGroup>
 
     <ItemGroup>
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\KnowledgeMedia.Core\KnowledgeMedia.Core.csproj" />
     </ItemGroup>
 
 </Project>

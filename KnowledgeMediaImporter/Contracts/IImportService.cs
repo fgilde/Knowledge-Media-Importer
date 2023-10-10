@@ -1,4 +1,4 @@
-namespace KnowledgeMediaImporter.Data;
+namespace KnowledgeMediaImporter.Contracts;
 
 public interface IImportService
 {

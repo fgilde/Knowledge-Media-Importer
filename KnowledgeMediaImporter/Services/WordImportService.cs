@@ -1,9 +1,10 @@
 using GroupDocs.Parser;
+using KnowledgeMediaImporter.Contracts;
 using Nextended.Core;
 
-namespace KnowledgeMediaImporter.Data;
+namespace KnowledgeMediaImporter.Services;
 
-public class WordImportService: IImportService
+public class WordImportService : IImportService
 {
     public bool CanHandle(string contentType)
     {
