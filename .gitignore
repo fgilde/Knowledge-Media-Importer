@@ -4,3 +4,5 @@
 /KnowledgeMedia.Core/bin/*
 /KnowledgeMediaImporter/.idea/*
 /.vs
+/.vs/KnowledgeMediaImporter/DesignTimeBuild/.dtbcache.v2
+/.vs/KnowledgeMediaImporter/v17/.suo
