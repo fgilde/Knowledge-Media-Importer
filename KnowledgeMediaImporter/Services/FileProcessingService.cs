@@ -50,19 +50,10 @@ public class FileProcessingService : IFileProcessingService
 
         try
         {
-            OnStatusUpdated("Test", 0.2);
-            await Task.Delay(2000);
-            OnStatusUpdated("Was geht...", 0.4);
-            await Task.Delay(3000);
-            OnStatusUpdated("Hallo", 0.8);
-
-            await Task.Delay(30000);
-            OnStatusUpdated("Done", 1);
-
-            //string text = await service.GetKnowledgeTextAsync(file.Data, cts.Token, OnStatusUpdated);
-            //var result = await GptService.PrepareContentAsync(text, cts.Token, OnStatusUpdated);
-            //result.Content = await service.AfterPrepareAsync(result.Content, cts.Token);
-            //await SabioService.CreateArticleAsync(result.Title, result.Content, cts.Token, OnStatusUpdated);
+            string text = await service.GetKnowledgeTextAsync(file.Data, cts.Token, OnStatusUpdated);
+            var result = await GptService.PrepareContentAsync(text, cts.Token, OnStatusUpdated);
+            result.Content = await service.AfterPrepareAsync(result.Content, cts.Token);
+            await SabioService.CreateArticleAsync(result.Title, result.Content, cts.Token, OnStatusUpdated);
 
             if (!cts.IsCancellationRequested)
                 progress.Text = "Done";

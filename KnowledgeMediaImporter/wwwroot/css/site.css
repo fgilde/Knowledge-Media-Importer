@@ -66,3 +66,35 @@ a, .btn-link {
     .blazor-error-boundary::after {
         content: "An error has occurred."
     }
+
+
+.mud-progress-linear-bars {
+    /* Ausgangs-Hintergrundfarbe */
+    background: linear-gradient(45deg, #aaa, #ddd);
+    position: relative;
+    overflow: hidden;
+}
+
+.animated-progress-linear-bars .mud-progress-linear-bars::before {
+    /* animierter schräger Gradient */
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2));
+    transform: translateX(-100%);
+    animation: slide 3s infinite;
+}
+
+@keyframes slide {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}

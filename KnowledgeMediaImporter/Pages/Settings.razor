@@ -4,6 +4,11 @@
 
 <PageTitle>rAIce - Settings</PageTitle>
 
-<MudExObjectEdit T="ServiceSettings" ValueChanged="@SaveSettingsAsync" Value="_serviceSettings.Value">
-
-</MudExObjectEdit>
+@if (_serviceSettings != null)
+{
+    <MudExObjectEditForm ShowCancelButton="false" T="ServiceSettings" OnValidSubmit="@SaveSettingsAsync" Value="_serviceSettings">
+        <ToolBarContent>
+            <MudIconButton Disabled="@(!File.Exists(UserSettingsFile))" OnClick="@DeleteAsync" Icon="@Icons.Material.Filled.Delete" Title="Delete custom and restore factory defaults"></MudIconButton>
+        </ToolBarContent>
+    </MudExObjectEditForm>
+}

@@ -12,10 +12,18 @@
 
 @if (_progresses?.Any() == true)
 {
-    @foreach (var run in _progresses)
-    {
-        <MudText Style="display: inline-block">@($"{run.File.FileName} - {run.Text}")</MudText>
-        <MudIconButton Style="display: inline-block" Icon="@Icons.Material.Filled.Cancel" OnClick="@(() => Cancel(run))"></MudIconButton>
-        <MudProgressLinear Color="Color.Secondary" Value="@run.Value" Class="my-7" />
-    }
+    <MudList Clickable="true">
+        <MudListSubheader>
+            Running Imports
+        </MudListSubheader>
+        @foreach (var run in _progresses)
+        {
+            <MudAlert Class="mud-ex-alert-message-w-100 mb-2" Variant="Variant.Outlined" Severity="Severity.Info" ShowCloseIcon="true" CloseIconClicked="@(() => Cancel(run))">
+                <MudText Color="Color.Default" Typo="Typo.button" Style="display: inline-block">@($"{run.File.FileName} - {run.Text}")</MudText>
+                <MudProgressLinear Class="animated-progress-linear-bars" Color="Color.Secondary" Value="@run.Value" Size="Size.Large" />
+            </MudAlert>
+        }
+
+        
+    </MudList>
 }

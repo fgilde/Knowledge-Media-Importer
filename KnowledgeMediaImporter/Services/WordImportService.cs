@@ -1,5 +1,7 @@
 using GroupDocs.Parser;
+using KnowledgeMediaImporter.Configuration;
 using KnowledgeMediaImporter.Contracts;
+using KnowledgeMediaImporter.Model;
 using Nextended.Core;
 
 namespace KnowledgeMediaImporter.Services;
@@ -28,4 +30,5 @@ public class WordImportService : IImportService
     {
         return Task.FromResult(text);
     }
+    
 }

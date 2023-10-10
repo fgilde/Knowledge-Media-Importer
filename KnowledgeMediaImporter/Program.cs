@@ -18,11 +18,13 @@ builder.Services.AddServerSideBlazor();
 
 builder.Services.AddMudServicesWithExtensions();
 builder.Services.AddScoped<IFileProcessingService, FileProcessingService>();
+builder.Services.AddScoped<VideoAnalyzer>();
 builder.Services.RegisterAllImplementationsOf<IImportService>(lifeTime: ServiceLifetime.Scoped);
+builder.Services.RegisterAllImplementationsOf<IServiceSettingsValidation>(lifeTime: ServiceLifetime.Scoped);
 
 
-builder.Services.AddSingleton<SabioService>();
-builder.Services.AddSingleton<GptService>();
+builder.Services.AddScoped<SabioService>();
+builder.Services.AddScoped<GptService>();
 
 var app = builder.Build();
 

@@ -1,16 +1,18 @@
 using KnowledgeMediaImporter.Configuration;
+using KnowledgeMediaImporter.Contracts;
+using KnowledgeMediaImporter.Model;
 using Microsoft.Extensions.Options;
 using OpenAI;
 using OpenAI.Chat;
 
 namespace KnowledgeMediaImporter.Services;
 
-public class GptService
+public class GptService : IServiceSettingsValidation
 {
     private OpenAIClient Api;
     private readonly ChatGptSettings _gptSettings;
 
-    public GptService(IOptions<ServiceSettings> serviceSettings)
+    public GptService(IOptionsSnapshot<ServiceSettings> serviceSettings)
     {
         _gptSettings = serviceSettings.Value.ChatGpt;
         Api = new OpenAIClient(_gptSettings.ApiKey);
@@ -57,5 +59,24 @@ public class GptService
         ChatRequest chatRequest = new ChatRequest(prompts, model);
         var response = await Api.ChatEndpoint.GetCompletionAsync(chatRequest);
         return response.FirstChoice.ToString();
+    }
+
+    public async Task<ServiceValidationResult> ValidateServiceSettingsAsync(ServiceSettings? serviceSettings)
+    {
+        if (serviceSettings?.ChatGpt is null)
+            return ServiceValidationResult.Fail("Settings are null");
+        var api = new OpenAIClient(serviceSettings.ChatGpt.ApiKey);
+        try
+        {
+            var res = await api.ChatEndpoint.GetCompletionAsync(new ChatRequest(new[] { new ChatPrompt("user", "are you available") }, new OpenAI.Models.Model(serviceSettings.ChatGpt.Model)));
+            return !string.IsNullOrEmpty(res?.FirstChoice?.ToString())
+                ? ServiceValidationResult.Success
+                : ServiceValidationResult.Fail("Please check api and model");
+        }
+        catch (Exception e)
+        {
+           return ServiceValidationResult.Fail(e.Message);
+        }
+        
     }
 }

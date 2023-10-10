@@ -1,20 +1,81 @@
 using KnowledgeMediaImporter.Configuration;
+using KnowledgeMediaImporter.Contracts;
+using KnowledgeMediaImporter.Model;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Options;
+using MudBlazor;
+using MudBlazor.Extensions;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Nextended.Core.Extensions;
 
 namespace KnowledgeMediaImporter.Pages;
 
 public partial class Settings
 {
-    [Inject] private IOptions<ServiceSettings> _serviceSettings { get; set; }
+    [Inject] private IDialogService _dialogService { get; set; }
+    [Inject] private IServiceProvider _serviceProvider { get; set; }
     [Inject] private IWebHostEnvironment _hostingEnvironment { get; set; }
-    
-    private string UserSettingsFile => Path.Combine(_hostingEnvironment.ContentRootPath, Constants.AppSettingsUserFile);
+    [Inject] private ISnackbar _snackBar { get; set; }
+    [Inject] private IOptionsMonitor<ServiceSettings> serviceSettingsMonitor { get; set; }
+    private ServiceSettings? _serviceSettings;
 
-    private async Task SaveSettingsAsync(ServiceSettings settings)
+    private string UserSettingsFile => Path.Combine(_hostingEnvironment.ContentRootPath, Constants.AppSettingsUserFile);
+   
+    protected override Task OnInitializedAsync()
     {
-        await File.WriteAllTextAsync(UserSettingsFile, JsonConvert.SerializeObject(new { Services = settings }, Formatting.Indented));
+        _serviceSettings = serviceSettingsMonitor.CurrentValue.Clone();
+
+        // Register change notification
+        serviceSettingsMonitor.OnChange(HandleSettingsChange);
+        return base.OnInitializedAsync();
+    }
+
+    private void HandleSettingsChange(ServiceSettings updatedSettings)
+    {
+        _serviceSettings = null;
+        InvokeAsync(StateHasChanged);
+        _serviceSettings = updatedSettings.Clone();
+        InvokeAsync(StateHasChanged);
+    }
+
+
+    private async Task SaveSettingsAsync(EditContext context)
+    {
+        var services = _serviceProvider.GetServices<IServiceSettingsValidation>().ToList();
+
+        var resultsWithService = await Task.WhenAll(services.Select(async s =>
+        {
+            var result = await s.ValidateServiceSettingsAsync(_serviceSettings);
+            return (ServiceName: s.GetType().Name, Result: result);
+        }));
+
+        if (resultsWithService.Any(r => !r.Result.IsValid))
+        {
+            var errorMessages = resultsWithService
+                .Where(r => !r.Result.IsValid)
+                .SelectMany(r => r.Result.Errors, (r, error) => $"{r.ServiceName}:\n - {error}");
+
+            var message = $"Could not save settings, some are invalid: {string.Join(Environment.NewLine + Environment.NewLine, errorMessages)}";
+
+            _snackBar.Add(message, Severity.Error);
+        }
+        else
+        {
+            await File.WriteAllTextAsync(UserSettingsFile, JsonConvert.SerializeObject(new { Services = _serviceSettings }, Formatting.Indented));
+            _snackBar.Add("Settings saved!", Severity.Info);
+        }
+    }
+
+
+    private async Task DeleteAsync()
+    {
+        if (!File.Exists(UserSettingsFile))
+            return;
+        var res = await _dialogService.ShowConfirmationDialogAsync("Restore default", "Are you sure you want to restore the default settings? This will overwrite any changes you've ever made here.", icon: Icons.Material.Filled.RestorePage);
+        if (res)
+            File.Delete(UserSettingsFile);
     }
 
 }

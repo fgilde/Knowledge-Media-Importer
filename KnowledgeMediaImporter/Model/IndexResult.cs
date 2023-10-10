@@ -1,5 +1,9 @@
 namespace KnowledgeMediaImporter.Model;
 
+public class IndexerError
+{
+    public string Message { get; set; }
+}
 public class IndexResult
 {
     public string partition { get; set; }

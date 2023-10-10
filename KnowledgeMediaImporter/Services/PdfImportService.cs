@@ -1,4 +1,6 @@
+using KnowledgeMediaImporter.Configuration;
 using KnowledgeMediaImporter.Contracts;
+using KnowledgeMediaImporter.Model;
 using UglyToad.PdfPig;
 
 namespace KnowledgeMediaImporter.Services;

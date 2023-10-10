@@ -1,3 +1,4 @@
+
 namespace KnowledgeMediaImporter.Contracts;
 
 public interface IImportService
