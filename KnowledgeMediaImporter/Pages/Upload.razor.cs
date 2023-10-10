@@ -1,6 +1,5 @@
 using System.Collections.Specialized;
 using KnowledgeMediaImporter.Contracts;
-using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using MudBlazor.Extensions;
 using MudBlazor.Extensions.Components;
@@ -12,9 +11,6 @@ public partial class Upload
 
     private List<Progress>? _progresses;
 
-    [Inject] private IFileProcessingService FileProcessingService { get; set; }
-    [Inject] private IDialogService DialogService { get; set; }
-    
     protected override Task OnInitializedAsync()
     {
         FileProcessingService.FileProgresses.CollectionChanged += FileProgressesOnCollectionChanged;

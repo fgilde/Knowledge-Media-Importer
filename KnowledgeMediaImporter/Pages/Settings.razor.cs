@@ -12,14 +12,10 @@ namespace KnowledgeMediaImporter.Pages;
 
 public partial class Settings
 {
-    [Inject] private IDialogService _dialogService { get; set; }
-    [Inject] private IServiceProvider _serviceProvider { get; set; }
-    [Inject] private IWebHostEnvironment _hostingEnvironment { get; set; }
-    [Inject] private ISnackbar _snackBar { get; set; }
     [Inject] private IOptionsMonitor<ServiceSettings> serviceSettingsMonitor { get; set; }
     private ServiceSettings? _serviceSettings;
 
-    private string UserSettingsFile => Path.Combine(_hostingEnvironment.ContentRootPath, Constants.AppSettingsUserFile);
+    private string UserSettingsFile => Path.Combine(HostingEnvironment.ContentRootPath, Constants.AppSettingsUserFile);
    
     protected override Task OnInitializedAsync()
     {
@@ -41,13 +37,9 @@ public partial class Settings
 
     private async Task SaveSettingsAsync(EditContext context)
     {
-        var services = _serviceProvider.GetServices<IServiceSettingsValidation>().ToList();
+        var services = ServiceProvider.GetServices<IServiceSettingsValidation>().ToList();
 
-        var resultsWithService = await Task.WhenAll(services.Select(async s =>
-        {
-            var result = await s.ValidateServiceSettingsAsync(_serviceSettings);
-            return (ServiceName: s.GetType().Name, Result: result);
-        }));
+        var resultsWithService = await Task.WhenAll(services.Select(async s => (ServiceName: s.GetType().Name, Result: await s.ValidateServiceSettingsAsync(_serviceSettings))));
 
         if (resultsWithService.Any(r => !r.Result.IsValid))
         {
@@ -57,12 +49,12 @@ public partial class Settings
 
             var message = $"Could not save settings, some are invalid: {string.Join(Environment.NewLine + Environment.NewLine, errorMessages)}";
 
-            _snackBar.Add(message, Severity.Error);
+            SnackBar.Add(message, Severity.Error);
         }
         else
         {
             await File.WriteAllTextAsync(UserSettingsFile, JsonConvert.SerializeObject(new { Services = _serviceSettings }, Formatting.Indented));
-            _snackBar.Add("Settings saved!", Severity.Info);
+            SnackBar.Add("Settings saved!", Severity.Info);
         }
     }
 
@@ -71,7 +63,7 @@ public partial class Settings
     {
         if (!File.Exists(UserSettingsFile))
             return;
-        var res = await _dialogService.ShowConfirmationDialogAsync("Restore default", "Are you sure you want to restore the default settings? This will overwrite any changes you've ever made here.", icon: Icons.Material.Filled.RestorePage);
+        var res = await DialogService.ShowConfirmationDialogAsync("Restore default", "Are you sure you want to restore the default settings? This will overwrite any changes you've ever made here.", icon: Icons.Material.Filled.RestorePage);
         if (res)
             File.Delete(UserSettingsFile);
     }

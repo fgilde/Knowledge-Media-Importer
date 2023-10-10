@@ -73,7 +73,9 @@ public class SabioService : IServiceSettingsValidation
             
         }
         progress(created?.Success == true ? "Article created successfully" : "Failed to create Article", 0.93);
-        return $"https://maestro-anna-knowledge.labs.swops.cloud/sabio5/#!/search/text/_id/{created?.Data?.Result?.Id}";
+        var res = $"https://maestro-fg-knowledge.labs.swops.cloud/sabio5/#!/search/text/_id/{created?.Data?.Result?.Id}";
+
+        return res;
     }
 
     public async Task<ServiceValidationResult> ValidateServiceSettingsAsync(ServiceSettings? serviceSettings)

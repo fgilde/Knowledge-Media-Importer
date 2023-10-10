@@ -1,0 +1,16 @@
+error handling
+settings:
+ create subpath
+ file attach
+ select treenode
+ branches
+ mandatory categories prüfen
+
+passwort und user weg nur api key...
+realm config weg
+url ohne /sabio-web/services statdessen _config
+
+login für die app?.. über Traefik?
+multilanguage?
+
+results and logs
