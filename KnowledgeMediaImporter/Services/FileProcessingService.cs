@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using KnowledgeMediaImporter.Contracts;
+using KnowledgeMediaImporter.Model;
 using Nextended.Core.Contracts;
 
 namespace KnowledgeMediaImporter.Services;
@@ -22,12 +23,12 @@ public class FileProcessingService : IFileProcessingService
         SabioService = sabioService;
     }
 
-    public async Task ExecuteImportAsync(IEnumerable<IUploadableFile> files)
+    public async Task ExecuteImportAsync(ImportJobConfiguration configuration)
     {
-        await Task.WhenAll(files.Select(ExecuteImportAsync).ToList());
+        await Task.WhenAll(configuration.Files.Select(f => ExecuteImportAsync(f, configuration.KnowledgeTargetSettings)).ToList());
     }
 
-    private async Task ExecuteImportAsync(IUploadableFile file)
+    private async Task ExecuteImportAsync(IUploadableFile file, KnowledgeTargetSettings targetSettings)
     {
         var cts = new CancellationTokenSource();
 
@@ -52,8 +53,10 @@ public class FileProcessingService : IFileProcessingService
         {
             string text = await service.GetKnowledgeTextAsync(file.Data, cts.Token, OnStatusUpdated);
             var result = await GptService.PrepareContentAsync(text, cts.Token, OnStatusUpdated);
+            //(string Title, string Content) result = ("TEST TEXT", text);
+
             result.Content = await service.AfterPrepareAsync(result.Content, cts.Token);
-            await SabioService.CreateArticleAsync(result.Title, result.Content, cts.Token, OnStatusUpdated);
+            await SabioService.CreateArticleAsync(result.Title, result.Content, file.Path, targetSettings, cts.Token, OnStatusUpdated);
 
             if (!cts.IsCancellationRequested)
                 progress.Text = "Done";

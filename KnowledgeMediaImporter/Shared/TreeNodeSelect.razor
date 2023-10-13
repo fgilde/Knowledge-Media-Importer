@@ -1,0 +1,192 @@
+﻿@using SABIO.ClientApi.Responses.Types
+@using MudBlazor.Extensions.Core
+@using Nextended.Core.Extensions
+@using SABIO.ClientApi.Responses
+
+@if (Entries != null)
+{
+    <MudExTagField T="string" FullWidth="true"
+                   Style="margin:15px 0;"
+                   Clearable="true"
+                   Closeable="true"
+                   TextChanged="SearchTextChanged"
+                   @bind-Value="_searchValue"
+                   @bind-Values="_searchValues"
+                   SetChipsOnEnter="true"
+                   ChipColor="Color.Primary"
+                   ChipVariant="Variant.Filled"
+                   Label="Filter" />
+    <MudTreeView MaxHeight="80%" Color="Color.Primary" Hover="true" Items="@Entries">
+        <ItemTemplate>
+            @{
+                var search = GetMatchedSearch(context);
+                @if (search.Found)
+                {
+                    <MudTreeViewItem Expanded="@IsExpanded(context)"
+                                     Style="@("cursor: pointer;")"
+                                     OnClick="@(() => NodeClick(context))"
+                                     Text="@context.Title"
+                                     Icon="@Icons.Material.Filled.Label"
+                                     Items="@context.Children.ToHashSet()">
+                        <Content>
+                            <MudTreeViewItemToggleButton ExpandedChanged="@(expanded => SetExpanded(context, expanded))" Expanded="@IsExpanded(context)" Visible="@(!context.Leaf)"/>
+                            @if (!string.IsNullOrEmpty(search.Term))
+                            {
+                                <MudHighlighter Text="@context.Title" HighlightedText="@search.Term"/>
+                            }
+                            else
+                            {
+                                <MudText Style="@($"color: {(IsSelected(context) ? MudExColor.Secondary.ToCssStringValue() : "inherit")};")">@context.Title</MudText>
+                            }
+                            @if (context.Id == SelectedNode?.Id)
+                            {
+                                <MudSpacer/>
+                                <MudIconButton Size="Size.Small" OnClick="@CreateSubNodeClick" Icon="@Icons.Material.Filled.Add"/>
+                                <MudIconButton Size="Size.Small" OnClick="@DeleteSelectedNodeClick" Icon="@Icons.Material.Filled.Remove" />
+                            }
+                        </Content>
+                    </MudTreeViewItem>
+                }
+            }
+        </ItemTemplate>
+    </MudTreeView>
+}
+@code {
+
+    private string _searchValue;
+    private List<string> _searchValues = new();
+    private bool IsSelected(TreeNode node) => SelectedNode?.Id == node.Id;
+    private HashSet<string> _expanded = new();
+    private List<string> GetFilterValues() => new[] { _searchValue }.Concat(_searchValues).Where(s => !string.IsNullOrEmpty(s)).Distinct().ToList();
+    private bool _manualExpandedWhileSearch;
+
+    [Parameter] public HashSet<TreeNode>? Entries { get; set; }
+    [Parameter] public TreeNode? SelectedNode { get; set; }
+    [Parameter] public EventCallback<TreeNode> SelectedNodeChanged { get; set; }
+    [Parameter] public bool AllowSelectionOfNonLeafNodes { get; set; } = true;
+
+    public bool SearchActive => GetFilterValues()?.Any() == true;
+    public bool IsExpanded(TreeNode node) => _expanded.Contains(node.Id);
+    public void ExpandAll() => _expanded = new HashSet<string>(Entries.Recursive(n => n.Children).Where(n => !n.Leaf).Select(n => n.Id));
+    public void CollapseAll() => _expanded.Clear();
+
+    public void ExpandTo(TreeNode node)
+    {
+        while (node != null)
+        {
+            _expanded.Add(node.Id);
+            node = node.ParentNode;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Entries = await LoadDataAsync();
+            if (SelectedNode != null) // Ensure correct reference and expand to selection
+                ExpandTo(SelectedNode);
+            await InvokeAsync(StateHasChanged);
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+
+    private (bool Found, string? Term) GetMatchedSearch(TreeNode node)
+    {
+        if(!SearchActive)
+            return (true, string.Empty);
+
+        if (!node.Leaf && node.Children.Recursive(n => n.Children).Any(n => GetMatchedSearch(n).Found))
+            return (true, string.Empty);
+        
+        var filterValues = GetFilterValues();
+        
+        foreach (var filter in filterValues)
+        {
+            if (node.Title.Contains(filter, StringComparison.InvariantCultureIgnoreCase))
+                return (true, filter); ;
+        }
+        
+        return (false, string.Empty); ;
+    }
+    
+    private async Task<HashSet<TreeNode>> LoadDataAsync()
+    {
+        var response = await SabioClient.Apis.Tree.TreeAsync();
+        return new HashSet<TreeNode>(response.Data.Result.Children);
+    }
+
+    private void NodeClick(TreeNode node)
+    {
+        if (node.Leaf || AllowSelectionOfNonLeafNodes)
+        {
+            //SelectedNode = SelectedNode != node ? node : null;
+            SelectedNode = node;
+            SelectedNodeChanged.InvokeAsync(SelectedNode);
+        }
+        if(!node.Leaf)
+            ToggleExpanded(node);
+    }
+
+    private void ToggleExpanded(TreeNode node)
+    {
+        _manualExpandedWhileSearch = SearchActive;
+        if (IsExpanded(node))
+            _expanded.Remove(node.Id);
+        else
+            _expanded.Add(node.Id);
+    }
+
+    private void SetExpanded(TreeNode context, bool expanded)
+    {
+        if(expanded && !IsExpanded(context))
+            _expanded.Add(context.Id);
+        else if(!expanded && IsExpanded(context))
+            _expanded.Remove(context.Id);
+    }
+
+    private void SearchTextChanged()
+    {
+        if (_manualExpandedWhileSearch) return;
+        if(SearchActive)
+            ExpandAll();
+        else 
+            CollapseAll();
+    }
+
+    private async Task CreateSubNodeClick()
+    {
+        if(SelectedNode == null)
+            return;
+        var res = await DialogService.PromptAsync("Create node", "Node name", s => !string.IsNullOrEmpty(s));
+        if (!string.IsNullOrEmpty(res))
+        {
+            var user = await SabioClient.Apis.Authentication.GetCurrentUserAsync();
+            var group = SelectedNode.Group ?? (await SabioClient.Apis.Texts.GetGroupsAsync(SelectedNode.Branches ?? Array.Empty<Branch>())).Data?.Result?.FirstOrDefault();
+            var newNode = new TreeNode { Title = res, Group = group, CreatedBy = user, Branches = SelectedNode.Branches };
+            var result = await SabioClient.Apis.Tree.CreateNodeAsync(newNode, SelectedNode);
+            if (result.Success)
+            {
+                Entries = await LoadDataAsync();
+                ExpandTo(newNode);
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task DeleteSelectedNodeClick()
+    {
+        if(SelectedNode == null)
+            return;
+        if (await DialogService.ShowConfirmationDialogAsync("Delete node", $"Delete {SelectedNode.Title} ?"))
+        {
+            await SabioClient.Apis.Tree.DeleteNodeAsync(SelectedNode.Id);
+            Entries = await LoadDataAsync();
+            SelectedNode = null;
+            StateHasChanged();
+        }
+    }
+
+}

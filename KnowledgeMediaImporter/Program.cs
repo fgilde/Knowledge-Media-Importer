@@ -2,9 +2,13 @@ using MudBlazor.Extensions;
 using KnowledgeMediaImporter;
 using KnowledgeMediaImporter.Configuration;
 using KnowledgeMediaImporter.Contracts;
+using KnowledgeMediaImporter.Extensions;
 using KnowledgeMediaImporter.Services;
-using MudBlazor.Extensions.Components;
 using Nextended.Core.Extensions;
+using KnowledgeMediaImporter.MetaConfigurations;
+using Microsoft.Extensions.Options;
+using SABIO.ClientApi.Core;
+using SABIO.ClientApi.Core.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +20,7 @@ builder.Services.Configure<ServiceSettings>(builder.Configuration.GetSection("Se
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
-builder.Services.AddMudServicesWithExtensions();
+builder.Services.AddMudExWithExtendedDefaults();
 builder.Services.AddScoped<IFileProcessingService, FileProcessingService>();
 builder.Services.AddScoped<VideoAnalyzer>();
 builder.Services.RegisterAllImplementationsOf<IImportService>(lifeTime: ServiceLifetime.Scoped);
@@ -25,6 +29,15 @@ builder.Services.RegisterAllImplementationsOf<IServiceSettingsValidation>(lifeTi
 
 builder.Services.AddScoped<SabioService>();
 builder.Services.AddScoped<GptService>();
+
+builder.Services.AddScoped<SabioClient>(p =>
+{
+    var cfg = p.GetRequiredService<IOptionsSnapshot<ServiceSettings>>().Value.Knowledge;
+    var result = new SabioClient(cfg.Url, cfg.Realm);
+    if (!result.IsLoggedIn)
+        _ = result.LoginAsync(cfg);
+    return result.DisableAutomaticCaching();
+});
 
 var app = builder.Build();
 

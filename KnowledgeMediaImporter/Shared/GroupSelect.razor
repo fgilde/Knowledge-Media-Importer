@@ -1,0 +1,57 @@
+﻿@using SABIO.ClientApi.Responses
+@using MudBlazor.Extensions.Options
+@inherits MudExSelect<SABIO.ClientApi.Responses.Group>
+
+@Inherited()
+
+@code {
+
+    protected RenderFragment Inherited() => builder => base.BuildRenderTree(builder);
+
+    [Parameter]
+    public Branch[]? Branches { get; set; }
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        ValuePresenter = ValuePresenter.Text;
+        MultiSelection = false;
+        SelectAll = false;
+        ToStringFunc = g => g?.Name;
+        await base.OnInitializedAsync();
+    }
+
+    public override async Task SetParametersAsync(ParameterView parameters)
+    {
+        var updateRequired = (parameters.TryGetValue<Branch[]>(nameof(Branches), out var branches) && Branches != branches);
+        
+        await base.SetParametersAsync(parameters);
+
+        if (updateRequired)
+        {
+            ItemCollection = await LoadDataAsync();
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            ItemCollection = await LoadDataAsync();
+        
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+
+    protected async Task<IList<Group>> LoadDataAsync()
+    {
+        var config = await SabioClient.Apis.Texts.GetGroupsAsync(Branches ?? Array.Empty<Branch>());
+        var result = config.Data.Result;
+
+        if (Value != null && !result.Any(group => group.Id == Value.Id))
+            await Clear();
+
+        return result;
+    }
+}

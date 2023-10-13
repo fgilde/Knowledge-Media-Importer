@@ -6,7 +6,23 @@
     <MudText Typo="Typo.h4" Color="Color.Primary">Upload file(s) to summar</MudText><MudExGradientText Typo="Typo.h4">AI</MudExGradientText><MudText Color="Color.Primary" Typo="Typo.h4">ce as Knowledge Article</MudText>
 </div>
 
-<MudButton Class="m-5" Variant="Variant.Filled" Color="Color.Primary" OnClick="@UploadClick">Upload File</MudButton>
+<MudButton Disabled="@(SettingsWrong ?? true)" Class="m-5" Variant="Variant.Filled" Color="Color.Primary" OnClick="@UploadClick">
+    @if (!SettingsWrong.HasValue)
+    {
+        <MudProgressCircular Size="Size.Small" Class="mr-4" Color="Color.Primary" Indeterminate="true" />
+        <span>Validate settings...</span>
+    }
+    else
+    {
+        <span>Create new import</span>
+    }
+</MudButton>
+@if (SettingsWrong == true)
+{
+    <p class="mud-input-helper-text mud-input-error">
+        Your settings are not correct. Please update <a href="/settings">here</a>
+    </p>
+}
 <br />
 
 

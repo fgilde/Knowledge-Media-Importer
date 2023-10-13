@@ -1,0 +1,106 @@
+﻿@using SABIO.ClientApi.Responses.Types
+@using MudBlazor.Extensions.Options
+@inherits MudTextField<string>
+
+@if (_ready)
+{
+    @Inherited()
+}
+
+@code {
+    private bool _ready;
+    private string _id;
+    private TreeNode _treeNode;
+
+    [Parameter] public string Id
+    {
+        get => _id;
+        set
+        {
+            if (_id == value) return;
+            _id = value;
+            _ = OnIdChanged();
+        }
+    }
+
+
+    [Parameter] public EventCallback<string> IdChanged { get; set; }
+
+    protected RenderFragment Inherited() => builder => base.BuildRenderTree(builder);
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        SetInitialParams();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            SetInitialParams();
+            _ready = true;
+            await InvokeAsync(StateHasChanged);
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private void SetInitialParams()
+    {
+        AdornmentIcon = Icons.Material.Filled.MoreHoriz;
+        Adornment = Adornment.End;
+        OnAdornmentClick = new EventCallback<MouseEventArgs>(this, (Func<Task>)OnBrowseClick);
+        ReadOnly = true;
+        Style = "text-decoration: underline; font-style: italic;";
+    }
+
+    protected virtual async Task OnBrowseClick()
+    {
+        var res = await DialogService.ShowComponentInDialogAsync<TreeNodeSelect>("Tree", "Select Tree node",
+            treeSelect =>
+            {
+                treeSelect.SelectedNode = _treeNode;
+            },
+            dialog =>
+            {
+                dialog.Class = "dialog-content-full-height overflow-hidden mud-ex-dialog-initial";
+                dialog.ClassContent = "full-height max-height-97";
+                dialog.Icon = Icons.Material.Outlined.AccountTree;
+                dialog.Buttons = MudExDialogResultAction.OkCancelWithOkCondition<TreeNodeSelect>(s => s.SelectedNode is not null, "Confirm");
+            }, DialogOptionsEx.SlideInFromRight);
+        if (!res.DialogResult.Cancelled && res.Component.SelectedNode != null)
+        {
+            Id = res.Component.SelectedNode.Id;
+        }
+    }
+
+    private async Task OnIdChanged()
+    {
+        await UpdateValue();
+        await IdChanged.InvokeAsync(Id);
+    }
+
+    private async Task UpdateValue()
+    {
+        if (string.IsNullOrEmpty(Id))
+            Text = string.Empty;
+        else
+        {
+            _treeNode = await GetNodeAsync(Id);
+            Text = _treeNode != null ? $"{Id} - {_treeNode.Title}" : string.Empty;
+        }
+    }
+
+    private async Task<TreeNode> GetNodeAsync(string id)
+    {
+        try
+        {
+            return await SabioClient.Apis.Tree.FindNodeAsync(id);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+}

@@ -1,0 +1,70 @@
+﻿@using SABIO.ClientApi.Responses
+@using MudBlazor.Extensions.Options
+@inherits MudExSelect<SABIO.ClientApi.Responses.Branch>
+
+@Inherited()
+
+@code {
+
+    protected RenderFragment Inherited() => builder => base.BuildRenderTree(builder);
+
+    [Parameter]
+    public string TreeNodeId { get; set; }
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        ValuePresenter = ValuePresenter.Text;
+        MultiSelection = true;
+        SelectAll = true;
+        SelectAllPosition = SelectAllPosition.AfterSearchBox;
+        ValuePresenter = ValuePresenter.Chip;
+        ChipVariant = Variant.Outlined;
+        UseItemTemplateForSelection = true;
+        ItemTemplate = GetItemTemplate();
+        ToStringFunc = branch => branch?.Title;
+        await base.OnInitializedAsync();
+    }
+
+    public override async Task SetParametersAsync(ParameterView parameters)
+    {
+        var updateRequired = (parameters.TryGetValue<string>(nameof(TreeNodeId), out var nodeId) && TreeNodeId != nodeId);
+        
+        await base.SetParametersAsync(parameters);
+
+        if (updateRequired)
+        {
+            ItemCollection = await LoadDataAsync();
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            ItemCollection = await LoadDataAsync();
+        
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private RenderFragment<Branch> GetItemTemplate() => context =>
+        @<div style="display: flex; height: 25px;">
+            <div style=@($"margin:5px; width:15px; height:15px; border-radius:50%; background-color: #{context.Color}")></div>
+            <p style="margin: 5px 0 0 3px">@context.Title</p>
+        </div>;
+
+    protected async Task<IList<Branch>> LoadDataAsync()
+    {
+        if (!string.IsNullOrEmpty(TreeNodeId))
+        {
+            var node = await SabioClient.Apis.Tree.FindNodeAsync(TreeNodeId);
+            var selectedValueIds = SelectedValues?.Select(sv => sv.Id).ToList() ?? new List<string>();
+            SelectedValues = node.Branches.Where(b => selectedValueIds.Contains(b.Id)).ToList();
+            return node.Branches;
+        }
+
+        var config = await SabioClient.Apis.Config.ConfigAsync();
+        return config.Data.Branches;
+    }
+}
