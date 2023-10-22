@@ -12,11 +12,12 @@ public class PdfImportService : IImportService
         return contentType == "application/pdf";
     }
 
-    public Task<string> GetKnowledgeTextAsync(byte[] fileData, CancellationToken cancellationToken, Action<string, double> progress)
+    public Task<string> GetKnowledgeTextAsync(byte[] fileData, CancellationToken cancellationToken, IProgressUpdate progress)
     {
+        progress.Start();
         if (cancellationToken.IsCancellationRequested) return default;
 
-        progress("Read pdf pages", 0.2);
+        progress.Update("Read pdf pages", 10);
 
         using var memoryStream = new MemoryStream(fileData);
         using var pdf = PdfDocument.Open(memoryStream);
@@ -27,8 +28,8 @@ public class PdfImportService : IImportService
             var currentPage = pdf.GetPage(page);
             textBuilder.AppendLine(currentPage.Text);
         }
-        progress("Read pdf content", 0.3);
-
+        progress.Update("Read pdf content", 90);
+        progress.Done("Successfully read pdf content");
         return Task.FromResult(textBuilder.ToString());
     }
 

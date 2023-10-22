@@ -1,4 +1,5 @@
-﻿using KnowledgeMediaImporter.Configuration;
+﻿using System.Reflection;
+using KnowledgeMediaImporter.Configuration;
 using MudBlazor;
 using MudBlazor.Extensions.Components.ObjectEdit;
 using MudBlazor.Extensions.Components.ObjectEdit.Options;
@@ -13,6 +14,11 @@ public class ServiceSettingsMetaConfiguration: IObjectMetaConfiguration<ServiceS
         {
             field.InputType = InputType.Password;
         });
+
+        var props = typeof(OpenAI.Models.Model).GetProperties(BindingFlags.Public | BindingFlags.Static);
+        string[] items = props.Select(p => p.GetValue(typeof(OpenAI.Models.Model)).ToString()).ToArray();
+
+        meta.Property(m => m.ChatGpt.Model).RenderWithMudAutocomplete(items);
         return Task.CompletedTask;
     }
 }

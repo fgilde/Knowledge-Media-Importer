@@ -11,8 +11,6 @@
     [Parameter]
     public string TreeNodeId { get; set; }
 
-
-
     protected override async Task OnInitializedAsync()
     {
         ValuePresenter = ValuePresenter.Text;
@@ -26,7 +24,7 @@
         ToStringFunc = branch => branch?.Title;
         await base.OnInitializedAsync();
     }
-
+    
     public override async Task SetParametersAsync(ParameterView parameters)
     {
         var updateRequired = (parameters.TryGetValue<string>(nameof(TreeNodeId), out var nodeId) && TreeNodeId != nodeId);
@@ -35,26 +33,18 @@
 
         if (updateRequired)
         {
-            ItemCollection = await LoadDataAsync();
+            ItemCollection = await GetAvailableItemsAsync();
             StateHasChanged();
         }
     }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-            ItemCollection = await LoadDataAsync();
-        
-        await base.OnAfterRenderAsync(firstRender);
-    }
-
+    
     private RenderFragment<Branch> GetItemTemplate() => context =>
         @<div style="display: flex; height: 25px;">
             <div style=@($"margin:5px; width:15px; height:15px; border-radius:50%; background-color: #{context.Color}")></div>
             <p style="margin: 5px 0 0 3px">@context.Title</p>
         </div>;
 
-    protected async Task<IList<Branch>> LoadDataAsync()
+    protected override async Task<IList<Branch>> GetAvailableItemsAsync(CancellationToken cancellation = new CancellationToken())
     {
         if (!string.IsNullOrEmpty(TreeNodeId))
         {

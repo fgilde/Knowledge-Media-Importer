@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Net.Http.Headers;
 using KnowledgeMediaImporter.Configuration;
+using KnowledgeMediaImporter.Contracts;
 using KnowledgeMediaImporter.Model;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -96,26 +97,26 @@ public class VideoAnalyzer
         return playerWidgetRequestResult.Headers.Location;
     }
 
-    public async Task<(string VideoId, string Transcript)> UploadVideoAsync(byte[] data, Action<string, double> progress, CancellationToken cancellationToken)
+    public async Task<(string VideoId, string Transcript)> UploadVideoAsync(byte[] data, IProgressUpdate progress, CancellationToken cancellationToken)
     {
-        progress("Create connection", 0.1);
+        progress.Update("Create connection", 10);
         var accountAccessToken = await GetAccountAccessTokenAsync();
         if (cancellationToken.IsCancellationRequested) return default;
 
         var videoId = "7346e6835d";
-        //progress("Upload video", 0.2);
+        //progress.Update("Upload video", 20);
         //var videoId = await UploadVideoDataAsync(data, accountAccessToken, cancellationToken);
         //if (cancellationToken.IsCancellationRequested) return default;
 
-        //progress("Analyzing video", 0.3);
+        //progress.Update("Analyzing video", 30);
         //await WaitForVideoProcessingToCompleteAsync(videoId, accountAccessToken, cancellationToken);
         //if (cancellationToken.IsCancellationRequested) return default;
 
-        progress("Read video info and generate transcription", 0.4);
+        progress.Update("Read video info and generate transcription", 70);
         var content = await ReadVideoInfoAsync(videoId, accountAccessToken);
         var text = string.Join(Environment.NewLine, content.videos.First().insights.transcript.Select(t => t.text));
         if (cancellationToken.IsCancellationRequested) return default;
-
+        progress.Done("Successfully read video transcript");
         return (videoId, text);
     }
 

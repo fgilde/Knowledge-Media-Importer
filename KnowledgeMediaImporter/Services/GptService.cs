@@ -9,27 +9,41 @@ namespace KnowledgeMediaImporter.Services;
 
 public class GptService : IServiceSettingsValidation
 {
+    private readonly IConfiguration _configuration;
     private OpenAIClient Api;
     private readonly ChatGptSettings _gptSettings;
 
-    public GptService(IOptionsSnapshot<ServiceSettings> serviceSettings)
+    public GptService(IOptionsSnapshot<ServiceSettings> serviceSettings, IConfiguration configuration)
     {
+        _configuration = configuration;
         _gptSettings = serviceSettings.Value.ChatGpt;
         Api = new OpenAIClient(_gptSettings.ApiKey);
     }
 
-    public async Task<(string Title, string Content)> PrepareContentAsync(string text, CancellationToken cancellationToken, Action<string, double> progress)
+    public async Task<(string Title, string Content)> PrepareContentAsync(string text, CancellationToken cancellationToken, IProgressUpdate progress)
     {
-        //return ("TEST", text);
-        progress("Prepare HTML Content", 0.5);
+        progress.Start();
+        progress.Update("Prepare HTML Content", 20);
+
+        if (_configuration.GetValue<bool>("GptFake"))
+        {
+            await Task.Delay(1000);
+            progress.Update("Generate title", 70);
+            await Task.Delay(2000);
+            progress.Done("Successfully summarized content");
+            return ("TEST", text);
+        }
+        
         if (cancellationToken.IsCancellationRequested) return default;
         
         var model = new OpenAI.Models.Model(_gptSettings.Model);
 
         var contentString = await GenerateArticleContentAsync(text, model);
         if (cancellationToken.IsCancellationRequested) return default;
-        progress("Generate title", 0.7);
+        progress.Update("Generate title", 70);
         var titleString = await GenerateArticleTitleAsync(text, model);
+        progress.Done("Successfully summarized content");
+
         return (titleString, contentString);
     }
 
@@ -65,6 +79,14 @@ public class GptService : IServiceSettingsValidation
     {
         if (serviceSettings?.ChatGpt is null)
             return ServiceValidationResult.Fail("Settings are null");
+        if (string.IsNullOrWhiteSpace(serviceSettings?.ChatGpt.ApiKey))
+            return ServiceValidationResult.Fail("ApiKey empty or null");
+        if (string.IsNullOrWhiteSpace(serviceSettings?.ChatGpt.Model))
+            return ServiceValidationResult.Fail("No Model specified");
+
+        if(_configuration.GetValue<bool>("Dummy") || _configuration.GetValue<bool>("GptFake"))
+            return ServiceValidationResult.Success;
+        
         var api = new OpenAIClient(serviceSettings.ChatGpt.ApiKey);
         try
         {

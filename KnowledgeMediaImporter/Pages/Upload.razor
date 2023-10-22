@@ -1,4 +1,5 @@
 ﻿@page "/upload"
+@using MudBlazor.Extensions.Options
 
 <PageTitle>rAIce - Upload</PageTitle>
 
@@ -12,8 +13,14 @@
         <MudProgressCircular Size="Size.Small" Class="mr-4" Color="Color.Primary" Indeterminate="true" />
         <span>Validate settings...</span>
     }
+    else if (SettingsWrong.Value)
+    {
+        <MudIcon Class="mr-4" Color="Color.Error" Icon="@Icons.Material.Filled.Error"></MudIcon>
+        <span>Invalid settings</span>
+    }
     else
     {
+        <MudIcon Class="mr-4" Color="Color.Info" Icon="@Icons.Material.Filled.ImportExport"></MudIcon>
         <span>Create new import</span>
     }
 </MudButton>
@@ -28,18 +35,26 @@
 
 @if (_progresses?.Any() == true)
 {
-    <MudList Clickable="true">
-        <MudListSubheader>
-            Running Imports
-        </MudListSubheader>
-        @foreach (var run in _progresses)
+    <MudGrid Style="height: 100%">
+        <MudItem xs="12" sm="@(SelectedRun != null ? 6 : 12)">
+            <MudList Style="height: 100%; overflow:auto" Clickable="true">
+                <MudListSubheader>
+                    <MudText Typo="Typo.h4">Imports</MudText>
+                </MudListSubheader>
+                @foreach (var run in _progresses)
+                {
+                    <MudAlert NoIcon="@(SelectedRun == run)" OnClick="@(() => SelectedRun = SelectedRun != run ? run : null)" Class="mud-ex-animate-all-properties mud-ex-alert-message-w-100 mb-2" Variant="@(SelectedRun == run ? Variant.Filled : Variant.Outlined)" Severity="@(SelectedRun == run ? Severity.Success : run.Severity)" ShowCloseIcon="true" CloseIconClicked="@(() => Cancel(run))">
+                        <MudText Color="Color.Default" Typo="Typo.button" Style="display: inline-block">@($"{run.File.FileName} - {run.Text}")</MudText>
+                            <MudProgressLinear Class="@(!run.IsCompleted ? "animated-progress-linear-bars" : "")" Color="@run.Color" Value="@run.Value" Size="Size.Large" />
+                    </MudAlert>
+                }
+            </MudList>
+        </MudItem>
+        @if (SelectedRun != null)
         {
-            <MudAlert Class="mud-ex-alert-message-w-100 mb-2" Variant="Variant.Outlined" Severity="Severity.Info" ShowCloseIcon="true" CloseIconClicked="@(() => Cancel(run))">
-                <MudText Color="Color.Default" Typo="Typo.button" Style="display: inline-block">@($"{run.File.FileName} - {run.Text}")</MudText>
-                <MudProgressLinear Class="animated-progress-linear-bars" Color="Color.Secondary" Value="@run.Value" Size="Size.Large" />
-            </MudAlert>
+            <MudItem Style="margin-top:50px; border: 1px solid black" xs="12" sm="6">
+                <MudExCodeView Theme="CodeBlockTheme.AtomOneLight" Language="MudExCodeLanguage.Unknown" Code="@SelectedRun.Log"></MudExCodeView>
+            </MudItem>
         }
-
-        
-    </MudList>
+    </MudGrid>
 }

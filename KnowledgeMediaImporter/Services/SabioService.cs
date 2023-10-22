@@ -5,7 +5,6 @@ using KnowledgeMediaImporter.Extensions;
 using KnowledgeMediaImporter.Model;
 using Microsoft.Extensions.Options;
 using SABIO.ClientApi.Core;
-using SABIO.ClientApi.Core.Api;
 using SABIO.ClientApi.Extensions;
 using SABIO.ClientApi.Responses;
 using SABIO.ClientApi.Responses.Types;
@@ -30,20 +29,20 @@ public class SabioService : IServiceSettingsValidation
             await _client.LoginAsync(_knowledge);
     }
 
-    public async Task<string> CreateArticleAsync(string title, string text, string path, KnowledgeTargetSettings targetSettings, CancellationToken cancellationToken, Action<string, double> progress)
+    public async Task CreateArticleAsync(string title, string text, string path, KnowledgeTargetSettings targetSettings, CancellationToken cancellationToken, IProgressUpdate progress)
     {
-
-        if (cancellationToken.IsCancellationRequested) return string.Empty;
+        progress.Start();
+        if (cancellationToken.IsCancellationRequested) return;
         await EnsureLoggedIn();
         
-        progress("Connecting to knowledge", 0.8);
+        progress.Update("Connecting to knowledge", 10);
         User user = await _client.Apis.Authentication.GetCurrentUserAsync();
         
 
         var node = await _client.Apis.Tree.FindNodeAsync(targetSettings.TargetTreeNodeId);
         var branches = node.Branches.Where(b => targetSettings.TargetBranches.Any(tb => tb.Id == b.Id)).ToArray();
         var group = targetSettings.Group;
-        
+        progress.Update("Prepare structure and nodes", 20);
         if (targetSettings.CreateTreeNodesFromStructurePath && !string.IsNullOrEmpty(path) && path != "/")
         {
             foreach (var segment in path.Split('/').Where(s => !string.IsNullOrWhiteSpace(s)))
@@ -68,16 +67,21 @@ public class SabioService : IServiceSettingsValidation
             CreatedBy = user,
             Group = group
         };
-        progress("Create Article", 0.9);
-        if (cancellationToken.IsCancellationRequested) return string.Empty;
+        progress.Update("Create Article", 70);
+        if (cancellationToken.IsCancellationRequested) return;
 
         var created = await _client.Apis.Texts.CreateAsync(textToCreate);
-        if (!created?.Success ?? false)
+ 
+        if (created?.Success == true)
         {
-
+            progress.Update("Article created successfully", 90);
+            progress.WriteLog($"{_knowledge.Url.Replace("sabio-web/services", "")}sabio5/#!/search/text/_id/{created?.Data?.Result?.Id}");
+            progress.Done("Successfully created knowledge article");
         }
-        progress(created?.Success == true ? "Article created successfully" : "Failed to create Article", 0.93);
-        return $"https://maestro-anna-knowledge.labs.swops.cloud/sabio5/#!/search/text/_id/{created?.Data?.Result?.Id}";
+        else
+        {
+            progress.Failed("Failed to create Article");
+        }
     }
 
 

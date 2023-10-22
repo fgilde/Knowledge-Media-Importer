@@ -8,7 +8,6 @@ using Nextended.Core.Extensions;
 using KnowledgeMediaImporter.MetaConfigurations;
 using Microsoft.Extensions.Options;
 using SABIO.ClientApi.Core;
-using SABIO.ClientApi.Core.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +20,12 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
 builder.Services.AddMudExWithExtendedDefaults();
-builder.Services.AddScoped<IFileProcessingService, FileProcessingService>();
+
+if(builder.Configuration.GetValue<bool>("Dummy"))
+    builder.Services.AddScoped<IFileProcessingService, DummyProcessingService>();
+else
+    builder.Services.AddScoped<IFileProcessingService, FileProcessingService>();
+
 builder.Services.AddScoped<VideoAnalyzer>();
 builder.Services.RegisterAllImplementationsOf<IImportService>(lifeTime: ServiceLifetime.Scoped);
 builder.Services.RegisterAllImplementationsOf<IServiceSettingsValidation>(lifeTime: ServiceLifetime.Scoped);

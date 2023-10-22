@@ -18,12 +18,16 @@ public partial class Upload
     [Inject] private IOptionsMonitor<ServiceSettings> serviceSettingsMonitor { get; set; }
     private List<Progress>? _progresses;
     private bool? SettingsWrong;
-
+    public Progress? SelectedRun { get; private set; }
     protected override Task OnInitializedAsync()
     {
         FileProcessingService.FileProgresses.CollectionChanged += FileProgressesOnCollectionChanged;
         FileProcessingService.FileProgressesChanged += OnProgressChanged;
-        serviceSettingsMonitor.OnChange(settings => _ = ValidateSettings());
+        serviceSettingsMonitor.OnChange(settings =>
+        {
+            SettingsWrong = null;
+            InvokeAsync(StateHasChanged).ContinueWith(_ => ValidateSettings());
+        });
         return base.OnInitializedAsync();
     }
 
@@ -70,40 +74,15 @@ public partial class Upload
         }
     }
 
-
-    private DialogParameters CreateDialogParameters()
-    {
-        return new DialogParameters
-        {
-            { nameof(MudExMessageDialog.Buttons), MudExDialogResultAction.OkCancel("Upload") },
-            { nameof(MudExMessageDialog.Icon), Icons.Material.Filled.FileUpload }
-        };
-    }
-
-    private Task<(DialogResult DialogResult, MudExUploadEdit<UploadableFile> Component)> ShowUploadDialog(DialogParameters parameters)
-    {
-        return DialogService.ShowComponentInDialogAsync<MudExUploadEdit<UploadableFile>>("Upload content", "Upload content files as zip or separate",
-         uploadEdit =>
-         {
-             uploadEdit.AllowMultiple = true;
-             uploadEdit.MinHeight = 400;
-             uploadEdit.AutoExtractArchive = true;
-             uploadEdit.MimeTypes = Array.Empty<string>();
-             uploadEdit.MimeRestrictionType = RestrictionType.BlackList;
-             uploadEdit.StreamUrlHandling = StreamUrlHandling.BlobUrl;
-         }, parameters, options =>
-         {
-             options.Resizeable = true;
-             options.FullWidth = true;
-             options.MaxWidth = MaxWidth.Medium;
-         });
-    }
-
+    
     private async Task<ImportJobConfiguration?> ShowSettingsEdit()
     {
         var parameters = new DialogParameters
         {
-            {nameof(MudExObjectEditDialog<ImportJobConfiguration>.DialogIcon), Icons.Material.Filled.ImportExport}
+            {nameof(MudExObjectEditDialog<ImportJobConfiguration>.DialogIcon), Icons.Material.Filled.ImportExport},
+            {nameof(MudExObjectEditDialog<ImportJobConfiguration>.AllowExport), true},
+            {nameof(MudExObjectEditDialog<ImportJobConfiguration>.AllowImport), true},
+            {nameof(MudExObjectEditDialog<ImportJobConfiguration>.SetPropertiesAfterImport), true}
         };
         var settings = new ImportJobConfiguration();
         var result = await DialogService.EditObject(settings, "Specify Import settings", OnSubmit, DialogOptionsEx.SlideInFromRight, null, parameters);
@@ -129,6 +108,6 @@ public partial class Upload
 
     private void Cancel(Progress run)
     {
-        run.Cancellation.Cancel();
+        FileProcessingService.Cancel(run);
     }
 }

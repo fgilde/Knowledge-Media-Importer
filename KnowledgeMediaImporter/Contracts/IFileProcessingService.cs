@@ -9,4 +9,5 @@ public interface IFileProcessingService
     Task ExecuteImportAsync(ImportJobConfiguration configuration);
     ObservableCollection<Progress> FileProgresses { get; }
     event EventHandler<Progress> FileProgressesChanged;
+    void Cancel(Progress run);
 }

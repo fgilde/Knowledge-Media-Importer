@@ -39,7 +39,6 @@
     {
         if (firstRender)
             ItemCollection = await LoadDataAsync();
-        
         await base.OnAfterRenderAsync(firstRender);
     }
 
@@ -49,7 +48,7 @@
         var config = await SabioClient.Apis.Texts.GetGroupsAsync(Branches ?? Array.Empty<Branch>());
         var result = config.Data.Result;
 
-        if (Value != null && !result.Any(group => group.Id == Value.Id))
+        if (Value?.Id != null && !result.Any(group => group.Id == Value.Id))
             await Clear();
 
         return result;

@@ -13,16 +13,17 @@ public class WordImportService : IImportService
         return contentType != "application/pdf" && MimeType.Matches(contentType, MimeType.DocumentTypes);
     }
 
-    public async Task<string> GetKnowledgeTextAsync(byte[] fileData, CancellationToken cancellationToken, Action<string, double> progress)
+    public async Task<string> GetKnowledgeTextAsync(byte[] fileData, CancellationToken cancellationToken, IProgressUpdate progress)
     {
         if (cancellationToken.IsCancellationRequested) return default;
-        progress("Read word content", 0.2);
+        progress.Update("Read word content", 10);
         using var stream = new MemoryStream(fileData);
         stream.Position = 0;
         Parser parser = new Parser(stream);
 
-        progress("Read word content", 0.3);
+        progress.Update("Read word content", 50);
         using TextReader reader = parser.GetText();
+        progress.Done("Successfully read word content");
         return await reader.ReadToEndAsync();
     }
 

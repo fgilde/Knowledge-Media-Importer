@@ -31,28 +31,26 @@ public class ImportJobMetaConfiguration : IObjectMetaConfiguration<ImportJobConf
 
         string? treeNodeId = null;
         meta.Property(m => m.KnowledgeTargetSettings.TargetBranches)
-            .WithLabel("Target views")
+            .WithLabel("Target views") // if we get  a selection of treenode we need to pass it to branch select to ensure possible values
             .RenderData.AddCondition<ImportJobConfiguration>(c => !string.IsNullOrEmpty(treeNodeId = c.KnowledgeTargetSettings?.TargetTreeNodeId), 
                 data => data.SetAttributes(new Dictionary<string, object> { { nameof(BranchSelect.TreeNodeId), treeNodeId } }), 
                 data => data.SetAttributes(new Dictionary<string, object> { { nameof(BranchSelect.TreeNodeId), null } }));
 
         Branch[]? branches = null;
-        meta.Property(m => m.KnowledgeTargetSettings.Group)
-            .RenderData.AddCondition<ImportJobConfiguration>(c => (branches = c?.KnowledgeTargetSettings?.TargetBranches)?.Any() == true,
+        meta.Property(m => m.KnowledgeTargetSettings.Group) // if we get  a selection of branches we need to pass them to group select to ensure possible values
+            .RenderData.AddCondition<ImportJobConfiguration>(c => (branches = c?.KnowledgeTargetSettings?.TargetBranches)?.Any(b => !string.IsNullOrEmpty(b.Id)) == true,
                 data => data.SetAttributes(new Dictionary<string, object> { { nameof(GroupSelect.Branches), branches } }),
                 data => data.SetAttributes(new Dictionary<string, object> { { nameof(GroupSelect.Branches), null } }));
 
-        //meta.Properties().WrapInMudItem(i => i.xs = 12);
-        //meta.Properties<bool>().WrapInMudItem(i =>
-        //{
-        //    i.xl = 6;
-        //    i.lg = 6;
-        //    i.xs = 12;
-        //});
+
         meta.Property(m => m.KnowledgeTargetSettings.AttachFileToText).WithLabel("Attach file to text")
             .WithDescription("If checked the file that is used for the creation will attached to text");
         meta.Property(m => m.KnowledgeTargetSettings.CreateTreeNodesFromStructurePath).WithLabel("Create sub tree nodes")
             .WithDescription("When this option is enabled and the file you're using comes from a folder or a ZIP archive, the system will use the file's path structure. This means that the generated text will be represented in the tree following the same path as in the original folder or ZIP archive. This helps in maintaining a consistent hierarchy and organization in the tree, just as in the source file's location");
+
+        meta.Property(m => m.Files)
+            .IgnoreOnExport()
+            .IgnoreOnImport();
 
         return Task.CompletedTask;
     }
