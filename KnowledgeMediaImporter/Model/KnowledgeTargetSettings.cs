@@ -8,7 +8,8 @@ public class KnowledgeTargetSettings
     [Required]
     public string TargetTreeNodeId { get; set; }
     public bool AttachFileToText { get; set; }
-    public bool CreateTreeNodesFromStructurePath { get; set; }
+    public bool CreateFileStructureFromPath { get; set; }
+    public bool CreateTreeNodeStructureFromPath { get; set; }
 
     [Required]
     [MinLength(1)]

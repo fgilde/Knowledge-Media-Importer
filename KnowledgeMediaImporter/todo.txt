@@ -2,8 +2,6 @@ error handling
 settings:
  create subpath
  file attach
- select treenode
- branches
  mandatory categories prüfen
 
 passwort und user weg nur api key...

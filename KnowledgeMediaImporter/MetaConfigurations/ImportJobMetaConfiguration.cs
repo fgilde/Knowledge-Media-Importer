@@ -45,7 +45,13 @@ public class ImportJobMetaConfiguration : IObjectMetaConfiguration<ImportJobConf
 
         meta.Property(m => m.KnowledgeTargetSettings.AttachFileToText).WithLabel("Attach file to text")
             .WithDescription("If checked the file that is used for the creation will attached to text");
-        meta.Property(m => m.KnowledgeTargetSettings.CreateTreeNodesFromStructurePath).WithLabel("Create sub tree nodes")
+
+        meta.Property(m => m.KnowledgeTargetSettings.CreateFileStructureFromPath).WithLabel("Create same file structure")
+            .WithDescription("When this option is enabled and the file you're using comes from a folder or a ZIP archive, the system will create the same structure for the uploaded files")
+            .IgnoreIf(c => !c.KnowledgeTargetSettings.AttachFileToText);
+
+
+        meta.Property(m => m.KnowledgeTargetSettings.CreateTreeNodeStructureFromPath).WithLabel("Create sub tree nodes")
             .WithDescription("When this option is enabled and the file you're using comes from a folder or a ZIP archive, the system will use the file's path structure. This means that the generated text will be represented in the tree following the same path as in the original folder or ZIP archive. This helps in maintaining a consistent hierarchy and organization in the tree, just as in the source file's location");
 
         meta.Property(m => m.Files)

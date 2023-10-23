@@ -4,6 +4,7 @@ using KnowledgeMediaImporter.Contracts;
 using KnowledgeMediaImporter.Extensions;
 using KnowledgeMediaImporter.Model;
 using Microsoft.Extensions.Options;
+using Nextended.Core.Contracts;
 using SABIO.ClientApi.Core;
 using SABIO.ClientApi.Extensions;
 using SABIO.ClientApi.Responses;
@@ -29,7 +30,7 @@ public class SabioService : IServiceSettingsValidation
             await _client.LoginAsync(_knowledge);
     }
 
-    public async Task CreateArticleAsync(string title, string text, string path, KnowledgeTargetSettings targetSettings, CancellationToken cancellationToken, IProgressUpdate progress)
+    public async Task CreateArticleAsync(string title, string text, IUploadableFile file, KnowledgeTargetSettings targetSettings, CancellationToken cancellationToken, IProgressUpdate progress)
     {
         progress.Start();
         if (cancellationToken.IsCancellationRequested) return;
@@ -43,9 +44,46 @@ public class SabioService : IServiceSettingsValidation
         var branches = node.Branches.Where(b => targetSettings.TargetBranches.Any(tb => tb.Id == b.Id)).ToArray();
         var group = targetSettings.Group;
         progress.Update("Prepare structure and nodes", 20);
-        if (targetSettings.CreateTreeNodesFromStructurePath && !string.IsNullOrEmpty(path) && path != "/")
+
+        if (targetSettings.AttachFileToText)
         {
-            foreach (var segment in path.Split('/').Where(s => !string.IsNullOrWhiteSpace(s)))
+            if (await _client.Apis.FileManagement.CanWorkAsync())
+            {
+                progress.Update("Uploading file", 30);
+                string parentFolderId = "root";
+                if (targetSettings.CreateFileStructureFromPath && !string.IsNullOrEmpty(file.Path) && file.Path != "/")
+                {
+                    var folders = await _client.Apis.FileManagement.CreateFolderStructureAsync(file.Path);
+                    parentFolderId = folders.LastOrDefault()?.Id ?? parentFolderId;
+                }
+
+                var toUpload = new SABIO.ClientApi.Responses.Types.File
+                {
+                    Title = file.FileName,
+                    ParentFolderId = parentFolderId,
+                    Filename = file.FileName,
+                    MimeType = file.ContentType,
+                    Owner = await _client.Apis.Authentication.GetCurrentUserAsync(),
+                    OwnerGroup = group,
+                    TargetGroups = (await _client.Apis.Texts.GetGroupsAsync(branches)).Data.Result
+                };
+                var uploadResponse = await _client.Apis.FileManagement.CreateFileAsync(toUpload.ToUploadableFile(file.Data));
+                if(uploadResponse.Success)
+                    progress.Update("Successfully uploaded file", 50);
+                else
+                    progress.WriteLog("Upload failed");
+            }
+            else
+            {
+                // TODO: Maybe use document storage instead
+                progress.WriteLog("Upload skipped. FileManagement is not enabled");
+            }
+        }
+
+        
+        if (targetSettings.CreateTreeNodeStructureFromPath && !string.IsNullOrEmpty(file.Path) && file.Path != "/")
+        {
+            foreach (var segment in file.Path.Split('/').Where(s => !string.IsNullOrWhiteSpace(s)))
                 node = node?.Children?.FirstOrDefault(n => n.Title == segment) ?? await CreateNodeAsync(node, branches, segment, user, group);
         }
 
@@ -93,7 +131,6 @@ public class SabioService : IServiceSettingsValidation
             var res = await _client.Apis.Tree.CreateNodeAsync(new TreeNode {Title = title, Group = group, CreatedBy = user, Branches = branches }, parentNode);
             if (res.Success)
                 return await _client.Apis.Tree.FindNodeAsync(res.Data.Result.Id);
-            //return res.Data.Result;
         }
         catch (Exception e)
         { }
