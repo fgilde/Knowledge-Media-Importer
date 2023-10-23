@@ -4,14 +4,23 @@ using MudBlazor;
 using MudBlazor.Extensions.Components;
 using MudBlazor.Extensions.Components.ObjectEdit;
 using MudBlazor.Extensions.Components.ObjectEdit.Options;
+using SABIO.ClientApi.Core;
 using SABIO.ClientApi.Responses;
 
 namespace KnowledgeMediaImporter.MetaConfigurations;
 
 public class ImportJobMetaConfiguration : IObjectMetaConfiguration<ImportJobConfiguration>
 {
-    public Task ConfigureAsync(ObjectEditMeta<ImportJobConfiguration> meta)
+    private readonly SabioClient _sabio;
+
+    public ImportJobMetaConfiguration(SabioClient sabio)
     {
+        _sabio = sabio;
+    }
+
+    public async Task ConfigureAsync(ObjectEditMeta<ImportJobConfiguration> meta)
+    {
+        var fmEnabled = await _sabio.Apis.FileManagement.CanWorkAsync();
         //meta.Property(m => m.TargetTreeNodeId).RenderWith<TreeNodeSelect, string, TreeNode>(s => s.SelectedNode, select => {}, id => new TreeNode() {Id = id}, node => node.Id);
         meta.Property(m => m.KnowledgeTargetSettings.TargetTreeNodeId).RenderWith<TreeNodeIdSelect, string>(s => s.Id, select =>
         {
@@ -44,7 +53,8 @@ public class ImportJobMetaConfiguration : IObjectMetaConfiguration<ImportJobConf
 
 
         meta.Property(m => m.KnowledgeTargetSettings.AttachFileToText).WithLabel("Attach file to text")
-            .WithDescription("If checked the file that is used for the creation will attached to text");
+            .WithDescription(fmEnabled ? "If checked the file that is used for the creation will attached to text" : "This option is disabled because FileManagement is not enabled on target system")
+            .AsDisabledIf(c => !fmEnabled);
 
         meta.Property(m => m.KnowledgeTargetSettings.CreateFileStructureFromPath).WithLabel("Create same file structure")
             .WithDescription("When this option is enabled and the file you're using comes from a folder or a ZIP archive, the system will create the same structure for the uploaded files")
@@ -58,6 +68,5 @@ public class ImportJobMetaConfiguration : IObjectMetaConfiguration<ImportJobConf
             .IgnoreOnExport()
             .IgnoreOnImport();
 
-        return Task.CompletedTask;
     }
 }

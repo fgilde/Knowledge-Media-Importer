@@ -101,7 +101,7 @@ namespace KnowledgeMediaImporter.Services
             return node;
         }
 
-        private async Task CreateArticle(CreateArticleOptions options, TreeNode node, User user, File fileToAttach)
+        private async Task CreateArticle(CreateArticleOptions options, TreeNode node, User user, File? fileToAttach)
         {
             var textToCreate = new Text
             {
@@ -113,6 +113,7 @@ namespace KnowledgeMediaImporter.Services
                     new Fragment {
                         Content = options.Content,
                         Branches = node.Branches,
+                        AttachedFiles = fileToAttach != null ? new[] { fileToAttach.Id } : null
                     }
                 },
                 CreatedBy = user,
