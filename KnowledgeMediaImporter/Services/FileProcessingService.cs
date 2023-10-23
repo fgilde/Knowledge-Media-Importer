@@ -59,7 +59,7 @@ public class FileProcessingService : IFileProcessingService
             string text = await service.GetKnowledgeTextAsync(file.Data, cts.Token, progress.WithRange(0, 30));
             var result = await GptService.PrepareContentAsync(text, cts.Token, progress.WithRange(30, 60));
             result.Content = await service.AfterPrepareAsync(result.Content, cts.Token);
-            await SabioService.CreateArticleAsync(result.Title, result.Content, file, targetSettings, cts.Token, progress.WithRange(60, 90));
+            await SabioService.CreateArticleAsync(new CreateArticleOptions(result.Title, result.Content, file, targetSettings, progress.WithRange(60, 90), cts.Token));
             if (!cts.IsCancellationRequested)
                 progress.WithoutRange().Done();
         }
