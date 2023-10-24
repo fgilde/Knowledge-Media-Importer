@@ -3,6 +3,7 @@ using KnowledgeMediaImporter.Contracts;
 using KnowledgeMediaImporter.Extensions;
 using KnowledgeMediaImporter.Model;
 using Microsoft.Extensions.Options;
+using Nextended.Core.Extensions;
 using SABIO.ClientApi.Core;
 using SABIO.ClientApi.Extensions;
 using SABIO.ClientApi.Responses;
@@ -14,10 +15,10 @@ namespace KnowledgeMediaImporter.Services
 {
     public class SabioService : IServiceSettingsValidation
     {
-        private readonly SabioClient _client;
+        private readonly Task<SabioClient> _client;
         private readonly KnowledgeSettings _knowledge;
 
-        public SabioService(SabioClient client, IOptionsSnapshot<ServiceSettings> settings)
+        public SabioService(Task<SabioClient> client, IOptionsSnapshot<ServiceSettings> settings)
         {
             _client = client;
             _knowledge = settings.Value.Knowledge;
@@ -25,19 +26,25 @@ namespace KnowledgeMediaImporter.Services
 
         private async Task EnsureLoggedIn()
         {
-            if (!_client.IsLoggedIn)
-                await _client.LoginAsync(_knowledge);
+            var client = await _client;
+            if (!client.IsLoggedIn)
+                await client.LoginAsync(_knowledge);
         }
 
         public async Task CreateArticleAsync(CreateArticleOptions options)
         {
+            var client = await _client;
+
             options.Progress.Start();
             if (options.IsCancelled) return;
             await EnsureLoggedIn();
             options.Progress.Update("Connecting to knowledge", 10);
 
-            User user = await _client.Apis.Authentication.GetCurrentUserAsync();
-            var node = await EnsureTreeNodeStructure(options, await _client.Apis.Tree.FindNodeAsync(options.TargetSettings.TargetTreeNodeId), user);
+            User user = await client.Apis.Authentication.GetCurrentUserAsync();
+            var node = !string.IsNullOrWhiteSpace(options.TargetSettings.TargetTreeNodeId)
+                        ? await client.Apis.Tree.FindNodeAsync(options.TargetSettings.TargetTreeNodeId)
+                        : (await client.Apis.Tree.TreeAsync()).Data.Result;
+            node = await EnsureTreeNodeStructure(options, node, user);
 
             File? fileToAttach = null;
             if (options.TargetSettings.AttachFileToText)
@@ -51,7 +58,8 @@ namespace KnowledgeMediaImporter.Services
 
         private async Task<File?> HandleFileUpload(CreateArticleOptions options,  User user, TreeNode node)
         {
-            if (await _client.Apis.FileManagement.CanWorkAsync())
+            var client = await _client;
+            if (await client.Apis.FileManagement.CanWorkAsync())
             {
                 options.Progress.Update("Uploading file", 30);
                 return await UploadFile(options, user, node.Branches);
@@ -63,11 +71,13 @@ namespace KnowledgeMediaImporter.Services
 
         private async Task<File> UploadFile(CreateArticleOptions options, User user, Branch[] branches)
         {
+            var client = await _client;
+
             var file = options.File;
             string parentFolderId = "root";
             if (options.TargetSettings.CreateFileStructureFromPath && !string.IsNullOrEmpty(file.Path) && file.Path != "/")
             {
-                var folders = await _client.Apis.FileManagement.CreateFolderStructureAsync(file.Path);
+                var folders = await client.Apis.FileManagement.CreateFolderStructureAsync(file.Path);
                 parentFolderId = folders.LastOrDefault()?.Id ?? parentFolderId;
             }
             var toUpload = new File
@@ -78,10 +88,10 @@ namespace KnowledgeMediaImporter.Services
                 MimeType = file.ContentType,
                 Owner = user,
                 OwnerGroup = options.TargetSettings.Group,
-                TargetGroups = (await _client.Apis.Texts.GetGroupsAsync(branches)).Data.Result
+                TargetGroups = (await client.Apis.Texts.GetGroupsAsync(branches)).Data.Result
             };
 
-            var uploadResponse = await _client.Apis.FileManagement.CreateFileAsync(toUpload.ToUploadableFile(file.Data));
+            var uploadResponse = await client.Apis.FileManagement.CreateFileAsync(toUpload.ToUploadableFile(file.Data));
             if (uploadResponse.Success)
                 options.Progress.Update("Successfully uploaded file", 50);
             else
@@ -103,6 +113,8 @@ namespace KnowledgeMediaImporter.Services
 
         private async Task CreateArticle(CreateArticleOptions options, TreeNode node, User user, File? fileToAttach)
         {
+            var client = await _client;
+
             var textToCreate = new Text
             {
                 Title = options.Title,
@@ -123,12 +135,12 @@ namespace KnowledgeMediaImporter.Services
             options.Progress.Update("Create Article", 70);
             if (options.IsCancelled) return;
 
-            var created = await _client.Apis.Texts.CreateAsync(textToCreate);
+            var created = await client.Apis.Texts.CreateAsync(textToCreate);
 
             if (created?.Success == true)
             {
                 options.Progress.Update("Article created successfully", 90);
-                options.Progress.WriteLog($"{_knowledge.Url.Replace("sabio-web/services", "")}sabio5/#!/search/text/_id/{created?.Data?.Result?.Id}");
+                options.Progress.WriteLog($"{_knowledge.Url.Replace("sabio-web/services", "").EnsureEndsWith("/")}sabio5/#!/search/text/_id/{created?.Data?.Result?.Id}");
                 options.Progress.Done("Successfully created knowledge article");
             }
             else
@@ -139,13 +151,15 @@ namespace KnowledgeMediaImporter.Services
 
         private async Task<TreeNode> CreateNodeAsync(IProgressUpdate log, TreeNode parentNode, Branch[] branches, string title, User user, Group group)
         {
+            var client = await _client;
+
             try
             {
-                var res = await _client.Apis.Tree.CreateNodeAsync(new TreeNode { Title = title, Group = group, CreatedBy = user, Branches = branches }, parentNode);
+                var res = await client.Apis.Tree.CreateNodeAsync(new TreeNode { Title = title, Group = group, CreatedBy = user, Branches = branches }, parentNode);
                 if (res.Success)
                 {
                     //await Task.Delay(1000); // wait for the node to be created
-                    return await _client.Apis.Tree.FindNodeAsync(res.Data.Result.Id);
+                    return await client.Apis.Tree.FindNodeAsync(res.Data.Result.Id);
                 }
             }
             catch(Exception e)
@@ -169,7 +183,7 @@ namespace KnowledgeMediaImporter.Services
             SabioClient client;
             try
             {
-                client = new SabioClient(serviceSettings.Knowledge.Url, serviceSettings.Knowledge.Realm);
+                client = await SabioClient.CreateAsync(serviceSettings.Knowledge.Url, serviceSettings.Knowledge.Realm);
                 await client.LoginAsync(serviceSettings.Knowledge);
             }
             catch (Exception e)
@@ -177,7 +191,15 @@ namespace KnowledgeMediaImporter.Services
                 return ServiceValidationResult.Fail(e.Message);
             }
 
-            return client.IsLoggedIn ? ServiceValidationResult.Success : ServiceValidationResult.Fail("Invalid knowledge settings");
+            var res = client.IsLoggedIn ? ServiceValidationResult.Success : ServiceValidationResult.Fail("Invalid knowledge settings");
+            if (res.IsValid)
+            {
+                var c = await _client;
+                c.BaseUrl = client.BaseUrl;
+                c.Realm = client.Realm;
+                await c.LoginAsync(serviceSettings.Knowledge);
+            }
+            return res;
         }
     }
 }

@@ -1,7 +1,6 @@
 using KnowledgeMediaImporter.Configuration;
 using KnowledgeMediaImporter.Contracts;
 using KnowledgeMediaImporter.Model;
-using Microsoft.Extensions.Options;
 using Nextended.Core;
 
 namespace KnowledgeMediaImporter.Services;
@@ -30,6 +29,7 @@ public class VideoImportService : IImportService, IServiceSettingsValidation
 
     public async Task<string> AfterPrepareAsync(string text, CancellationToken cancellationToken)
     {
+        return text;
         if (cancellationToken.IsCancellationRequested) return default;
 
         var insightsWidgetUrlAsync = await _analyzer.GetInsightsWidgetUrlAsync(_videoId);

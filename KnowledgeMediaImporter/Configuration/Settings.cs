@@ -15,6 +15,8 @@ public class KnowledgeSettings
     public string Url { get; set; }
     [Required]
     public string Realm { get; set; }
+
+    public LoginType Login { get; set; }
     public string User { get; set; }
     public string Password { get; set; }
     public string ApiKey { get; set; }
@@ -38,4 +40,10 @@ public class ChatGptSettings
     public string Model { get; set; }
     [Required]
     public string ApiKey { get; set; }
+}
+
+public enum LoginType
+{
+    ApiKey,
+    User
 }

@@ -11,10 +11,12 @@
     [Parameter]
     public Branch[]? Branches { get; set; }
 
+    private SabioClient _sabio;
 
 
     protected override async Task OnInitializedAsync()
     {
+        _sabio = await SabioClient;
         ValuePresenter = ValuePresenter.Text;
         MultiSelection = false;
         SelectAll = false;
@@ -45,7 +47,7 @@
 
     protected async Task<IList<Group>> LoadDataAsync()
     {
-        var config = await SabioClient.Apis.Texts.GetGroupsAsync(Branches ?? Array.Empty<Branch>());
+        var config = await _sabio.Apis.Texts.GetGroupsAsync(Branches ?? Array.Empty<Branch>());
         var result = config.Data.Result;
 
         if (Value?.Id != null && !result.Any(group => group.Id == Value.Id))

@@ -8,7 +8,7 @@ public static class SabioClientExtensions
 {
     public static Task LoginAsync(this SabioClient client, KnowledgeSettings settings)
     {
-        return !string.IsNullOrEmpty(settings.ApiKey) 
+        return settings.Login == LoginType.ApiKey
             ? client.Api<AuthenticationApi>().LoginAsync(settings.ApiKey) 
             : client.Api<AuthenticationApi>().LoginAsync(settings.User, settings.Password);
     }

@@ -11,8 +11,10 @@
     [Parameter]
     public string TreeNodeId { get; set; }
 
+    private SabioClient _sabio;
     protected override async Task OnInitializedAsync()
     {
+        _sabio = await SabioClient;
         ValuePresenter = ValuePresenter.Text;
         MultiSelection = true;
         SelectAll = true;
@@ -48,13 +50,13 @@
     {
         if (!string.IsNullOrEmpty(TreeNodeId))
         {
-            var node = await SabioClient.Apis.Tree.FindNodeAsync(TreeNodeId);
+            var node = await _sabio.Apis.Tree.FindNodeAsync(TreeNodeId);
             var selectedValueIds = SelectedValues?.Select(sv => sv.Id).ToList() ?? new List<string>();
             SelectedValues = node.Branches.Where(b => selectedValueIds.Contains(b.Id)).ToList();
             return node.Branches;
         }
 
-        var config = await SabioClient.Apis.Config.ConfigAsync();
+        var config = await _sabio.Apis.Config.ConfigAsync();
         return config.Data.Branches;
     }
 }

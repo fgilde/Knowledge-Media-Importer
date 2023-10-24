@@ -59,6 +59,7 @@
     private HashSet<string> _expanded = new();
     private List<string> GetFilterValues() => new[] { _searchValue }.Concat(_searchValues).Where(s => !string.IsNullOrEmpty(s)).Distinct().ToList();
     private bool _manualExpandedWhileSearch;
+    private SabioClient _sabio;
 
     [Parameter] public HashSet<TreeNode>? Entries { get; set; }
     [Parameter] public TreeNode? SelectedNode { get; set; }
@@ -69,6 +70,12 @@
     public bool IsExpanded(TreeNode node) => _expanded.Contains(node.Id);
     public void ExpandAll() => _expanded = new HashSet<string>(Entries.Recursive(n => n.Children).Where(n => !n.Leaf).Select(n => n.Id));
     public void CollapseAll() => _expanded.Clear();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _sabio = await SabioClient;
+        await base.OnInitializedAsync();
+    }
 
     public void ExpandTo(TreeNode node)
     {
@@ -114,7 +121,7 @@
     
     private async Task<HashSet<TreeNode>> LoadDataAsync()
     {
-        var response = await SabioClient.Apis.Tree.TreeAsync();
+        var response = await _sabio.Apis.Tree.TreeAsync();
         return new HashSet<TreeNode>(response.Data.Result.Children);
     }
 
@@ -163,10 +170,10 @@
         var res = await DialogService.PromptAsync("Create node", "Node name", s => !string.IsNullOrEmpty(s));
         if (!string.IsNullOrEmpty(res))
         {
-            var user = await SabioClient.Apis.Authentication.GetCurrentUserAsync();
-            var group = SelectedNode.Group ?? (await SabioClient.Apis.Texts.GetGroupsAsync(SelectedNode.Branches ?? Array.Empty<Branch>())).Data?.Result?.FirstOrDefault();
+            var user = await _sabio.Apis.Authentication.GetCurrentUserAsync();
+            var group = SelectedNode.Group ?? (await _sabio.Apis.Texts.GetGroupsAsync(SelectedNode.Branches ?? Array.Empty<Branch>())).Data?.Result?.FirstOrDefault();
             var newNode = new TreeNode { Title = res, Group = group, CreatedBy = user, Branches = SelectedNode.Branches };
-            var result = await SabioClient.Apis.Tree.CreateNodeAsync(newNode, SelectedNode);
+            var result = await _sabio.Apis.Tree.CreateNodeAsync(newNode, SelectedNode);
             if (result.Success)
             {
                 Entries = await LoadDataAsync();
@@ -182,7 +189,7 @@
             return;
         if (await DialogService.ShowConfirmationDialogAsync("Delete node", $"Delete {SelectedNode.Title} ?"))
         {
-            await SabioClient.Apis.Tree.DeleteNodeAsync(SelectedNode.Id);
+            await _sabio.Apis.Tree.DeleteNodeAsync(SelectedNode.Id);
             Entries = await LoadDataAsync();
             SelectedNode = null;
             StateHasChanged();

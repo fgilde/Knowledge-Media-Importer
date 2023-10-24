@@ -7,20 +7,21 @@ using MudBlazor.Extensions.Components.ObjectEdit.Options;
 using SABIO.ClientApi.Core;
 using SABIO.ClientApi.Responses;
 
-namespace KnowledgeMediaImporter.MetaConfigurations;
+namespace KnowledgeMediaImporter.Configuration.MetaConfigurations;
 
 public class ImportJobMetaConfiguration : IObjectMetaConfiguration<ImportJobConfiguration>
 {
-    private readonly SabioClient _sabio;
+    private readonly Task<SabioClient> _sabio;
 
-    public ImportJobMetaConfiguration(SabioClient sabio)
+    public ImportJobMetaConfiguration(Task<SabioClient> sabio)
     {
         _sabio = sabio;
     }
 
     public async Task ConfigureAsync(ObjectEditMeta<ImportJobConfiguration> meta)
     {
-        var fmEnabled = await _sabio.Apis.FileManagement.CanWorkAsync();
+        var sabio = await _sabio;
+        var fmEnabled = await sabio.Apis.FileManagement.CanWorkAsync();
         //meta.Property(m => m.TargetTreeNodeId).RenderWith<TreeNodeSelect, string, TreeNode>(s => s.SelectedNode, select => {}, id => new TreeNode() {Id = id}, node => node.Id);
         meta.Property(m => m.KnowledgeTargetSettings.TargetTreeNodeId).RenderWith<TreeNodeIdSelect, string>(s => s.Id, select =>
         {
@@ -41,8 +42,8 @@ public class ImportJobMetaConfiguration : IObjectMetaConfiguration<ImportJobConf
         string? treeNodeId = null;
         meta.Property(m => m.KnowledgeTargetSettings.TargetBranches)
             .WithLabel("Target views") // if we get  a selection of treenode we need to pass it to branch select to ensure possible values
-            .RenderData.AddCondition<ImportJobConfiguration>(c => !string.IsNullOrEmpty(treeNodeId = c.KnowledgeTargetSettings?.TargetTreeNodeId), 
-                data => data.SetAttributes(new Dictionary<string, object> { { nameof(BranchSelect.TreeNodeId), treeNodeId } }), 
+            .RenderData.AddCondition<ImportJobConfiguration>(c => !string.IsNullOrEmpty(treeNodeId = c.KnowledgeTargetSettings?.TargetTreeNodeId),
+                data => data.SetAttributes(new Dictionary<string, object> { { nameof(BranchSelect.TreeNodeId), treeNodeId } }),
                 data => data.SetAttributes(new Dictionary<string, object> { { nameof(BranchSelect.TreeNodeId), null } }));
 
         Branch[]? branches = null;

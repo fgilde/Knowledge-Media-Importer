@@ -11,6 +11,7 @@
     private bool _ready;
     private string _id;
     private TreeNode _treeNode;
+    private SabioClient _sabio;
 
     [Parameter] public string Id
     {
@@ -34,6 +35,12 @@
         SetInitialParams();
     }
 
+    protected override async Task OnInitializedAsync()
+    {
+        _sabio = await SabioClient;
+        await base.OnInitializedAsync();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -48,6 +55,8 @@
     private void SetInitialParams()
     {
         AdornmentIcon = Icons.Material.Filled.MoreHoriz;
+        // Clearable = true;
+        // Placeholder = "Select tree node or leave empty to use root";
         Adornment = Adornment.End;
         OnAdornmentClick = new EventCallback<MouseEventArgs>(this, (Func<Task>)OnBrowseClick);
         ReadOnly = true;
@@ -95,7 +104,7 @@
     {
         try
         {
-            return await SabioClient.Apis.Tree.FindNodeAsync(id);
+            return await _sabio.Apis.Tree.FindNodeAsync(id);
         }
         catch (Exception)
         {

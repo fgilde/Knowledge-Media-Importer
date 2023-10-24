@@ -3,7 +3,7 @@ using MudBlazor.Extensions;
 using MudBlazor.Extensions.Components.ObjectEdit.Options;
 using SABIO.ClientApi.Responses;
 
-namespace KnowledgeMediaImporter.MetaConfigurations;
+namespace KnowledgeMediaImporter.Configuration.MetaConfigurations;
 
 internal static class RenderDataManager
 {

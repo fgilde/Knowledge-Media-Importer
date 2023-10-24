@@ -5,9 +5,9 @@ using KnowledgeMediaImporter.Contracts;
 using KnowledgeMediaImporter.Extensions;
 using KnowledgeMediaImporter.Services;
 using Nextended.Core.Extensions;
-using KnowledgeMediaImporter.MetaConfigurations;
 using Microsoft.Extensions.Options;
 using SABIO.ClientApi.Core;
+using KnowledgeMediaImporter.Configuration.MetaConfigurations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,14 +34,22 @@ builder.Services.RegisterAllImplementationsOf<IServiceSettingsValidation>(lifeTi
 builder.Services.AddScoped<SabioService>();
 builder.Services.AddScoped<GptService>();
 
-builder.Services.AddScoped<SabioClient>(p =>
+builder.Services.AddScoped<Task<SabioClient>>(async p =>
 {
     var cfg = p.GetRequiredService<IOptionsSnapshot<ServiceSettings>>().Value.Knowledge;
-    var result = new SabioClient(cfg.Url, cfg.Realm);
-    if (!result.IsLoggedIn)
-        _ = result.LoginAsync(cfg);
-    return result.DisableAutomaticCaching();
+    var client = await SabioClient.CreateAsync(cfg.Url, cfg.Realm);
+    if (!client.IsLoggedIn)
+        await client.LoginAsync(cfg);
+    return client.DisableAutomaticCaching();
 });
+
+//builder.Services.AddScoped<SabioClient>(p =>
+//{
+//    var clientTask = p.GetRequiredService<Task<SabioClient>>();
+//    return clientTask.Result;  // Blocks until the task completes
+//});
+
+
 
 var app = builder.Build();
 

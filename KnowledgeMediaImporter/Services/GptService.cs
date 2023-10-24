@@ -27,27 +27,34 @@ public class GptService : IServiceSettingsValidation
 
         if (_configuration.GetValue<bool>("GptFake"))
         {
-            await Task.Delay(1000);
+            await Task.Delay(1000, cancellationToken);
             progress.Update("Generate title", 70);
-            await Task.Delay(2000);
+            await Task.Delay(2000, cancellationToken);
             progress.Done("Successfully summarized content");
             return ("TEST", text);
         }
         
         if (cancellationToken.IsCancellationRequested) return default;
-        
-        var model = new OpenAI.Models.Model(_gptSettings.Model);
 
-        var contentString = await GenerateArticleContentAsync(text, model);
-        if (cancellationToken.IsCancellationRequested) return default;
-        progress.Update("Generate title", 70);
-        var titleString = await GenerateArticleTitleAsync(text, model);
-        progress.Done("Successfully summarized content");
+        try
+        {
+            var model = new OpenAI.Models.Model(_gptSettings.Model);
 
-        return (titleString, contentString);
+            var contentString = await GenerateArticleContentAsync(text, model, cancellationToken);
+            if (cancellationToken.IsCancellationRequested) return default;
+            progress.Update("Generate title", 70);
+            var titleString = await GenerateArticleTitleAsync(text, model, cancellationToken);
+            progress.Done("Successfully summarized content");
+            return (titleString, contentString);
+        }
+        catch (Exception e)
+        {
+            progress.Failed(e.Message);
+            return default;
+        }
     }
 
-    private async Task<string> GenerateArticleTitleAsync(string text, OpenAI.Models.Model model)
+    private async Task<string> GenerateArticleTitleAsync(string text, OpenAI.Models.Model model, CancellationToken cancellation = default)
     {
         var prompts = new[]
         {
@@ -55,11 +62,11 @@ public class GptService : IServiceSettingsValidation
             new ChatPrompt("user", text)
         }.ToList();
         ChatRequest chatRequest = new ChatRequest(prompts, model);
-        var response = await Api.ChatEndpoint.GetCompletionAsync(chatRequest);
+        var response = await Api.ChatEndpoint.GetCompletionAsync(chatRequest, cancellation);
         return response.FirstChoice.ToString().Replace("\"", "");
     }
 
-    private async Task<string> GenerateArticleContentAsync(string text, OpenAI.Models.Model model)
+    private async Task<string> GenerateArticleContentAsync(string text, OpenAI.Models.Model model, CancellationToken cancellation = default)
     {
         var prompts = new[]
         {
@@ -71,7 +78,7 @@ public class GptService : IServiceSettingsValidation
             new ChatPrompt("user", text)
         }.ToList();
         ChatRequest chatRequest = new ChatRequest(prompts, model);
-        var response = await Api.ChatEndpoint.GetCompletionAsync(chatRequest);
+        var response = await Api.ChatEndpoint.GetCompletionAsync(chatRequest, cancellation);
         return response.FirstChoice.ToString();
     }
 
