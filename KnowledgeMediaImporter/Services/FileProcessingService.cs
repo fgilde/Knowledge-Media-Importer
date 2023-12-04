@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using KnowledgeMediaImporter.Contracts;
 using KnowledgeMediaImporter.Model;
+using MudBlazor.Extensions.Components;
 using Nextended.Core.Contracts;
 
 namespace KnowledgeMediaImporter.Services;
@@ -35,10 +36,9 @@ public class FileProcessingService : IFileProcessingService
         await Task.WhenAll(configuration.Files.Select(f => ExecuteImportAsync(f, configuration.KnowledgeTargetSettings)).ToList());
     }
 
-    private async Task ExecuteImportAsync(IUploadableFile file, KnowledgeTargetSettings targetSettings)
+    private async Task ExecuteImportAsync(UploadableFile file, KnowledgeTargetSettings targetSettings)
     {
         var cts = new CancellationTokenSource();
-
         var progress = new Progress(file, cts);
         progress.Changed += (_, _) => FileProgressesChanged?.Invoke(this, progress);
         FileProgresses.Add(progress);
@@ -55,6 +55,7 @@ public class FileProcessingService : IFileProcessingService
         
         try
         {
+            await file.EnsureDataLoadedAsync();
             string text = await service.GetKnowledgeTextAsync(file.Data, cts.Token, progress.WithRange(0, 30));
             var result = await GptService.PrepareContentAsync(text, cts.Token, progress.WithRange(30, 60));
             if(result == default) 

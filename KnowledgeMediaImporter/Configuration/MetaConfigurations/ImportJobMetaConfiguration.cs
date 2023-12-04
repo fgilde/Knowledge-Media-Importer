@@ -37,6 +37,10 @@ public class ImportJobMetaConfiguration : IObjectMetaConfiguration<ImportJobConf
             uploadEdit.MimeTypes = Array.Empty<string>();
             uploadEdit.MimeRestrictionType = RestrictionType.BlackList;
             uploadEdit.StreamUrlHandling = StreamUrlHandling.BlobUrl;
+            uploadEdit.AutoLoadFileDataBytes = true;
+            uploadEdit.LoadFileDataBytesInBackground = false;
+            uploadEdit.ExternalProviderRendering = ExternalProviderRendering.IntegratedInDialogAsImages;
+
         }).WithGroup("Files").WithoutLabel();
 
         string? treeNodeId = null;

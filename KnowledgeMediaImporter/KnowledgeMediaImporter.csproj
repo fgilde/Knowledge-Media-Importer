@@ -16,7 +16,7 @@
         <PackageReference Include="Microsoft.Identity.Web" Version="1.16.0" />
         <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.16.0" />
         <PackageReference Include="MudBlazor" Version="6.11.0" />
-        <PackageReference Include="MudBlazor.Extensions" Version="1.7.75" />
+        <PackageReference Include="MudBlazor.Extensions" Version="1.7.76" />
         <PackageReference Include="OpenAI-DotNet" Version="6.5.0" />
         <PackageReference Include="PdfPig" Version="0.1.9-alpha-20230914-d59d2" />
         <PackageReference Include="SABIO.ClientApi" Version="1.0.8" />
