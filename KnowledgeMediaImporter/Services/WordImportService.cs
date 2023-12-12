@@ -13,7 +13,7 @@ public class WordImportService : IImportService
         return contentType != "application/pdf" && MimeType.Matches(contentType, MimeType.DocumentTypes);
     }
 
-    public async Task<string> GetKnowledgeTextAsync(byte[] fileData, CancellationToken cancellationToken, IProgressUpdate progress)
+    public async Task<string> GetKnowledgeTextAsync(byte[] fileData, KnowledgeTargetSettings targetSettings, CancellationToken cancellationToken, IProgressUpdate progress)
     {
         if (cancellationToken.IsCancellationRequested) return default;
         progress.Update("Read word content", 10);

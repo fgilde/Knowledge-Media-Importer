@@ -11,6 +11,8 @@ public class KnowledgeTargetSettings
     public bool CreateFileStructureFromPath { get; set; }
     public bool CreateTreeNodeStructureFromPath { get; set; }
 
+    public string TargetLanguage { get; set; } = "English";
+
     [Required]
     [MinLength(1)]
     public Branch[] TargetBranches { get; set; }

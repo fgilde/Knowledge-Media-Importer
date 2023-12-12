@@ -103,14 +103,14 @@ public class VideoAnalyzer
         var accountAccessToken = await GetAccountAccessTokenAsync();
         if (cancellationToken.IsCancellationRequested) return default;
 
-        var videoId = "7346e6835d";
-        //progress.Update("Upload video", 20);
-        //var videoId = await UploadVideoDataAsync(data, accountAccessToken, cancellationToken);
-        //if (cancellationToken.IsCancellationRequested) return default;
+        //var videoId = "7346e6835d";
+        progress.Update("Upload video", 20);
+        var videoId = await UploadVideoDataAsync(data, accountAccessToken, cancellationToken);
+        if (cancellationToken.IsCancellationRequested) return default;
 
-        //progress.Update("Analyzing video", 30);
-        //await WaitForVideoProcessingToCompleteAsync(videoId, accountAccessToken, cancellationToken);
-        //if (cancellationToken.IsCancellationRequested) return default;
+        progress.Update("Analyzing video", 30);
+        await WaitForVideoProcessingToCompleteAsync(videoId, accountAccessToken, cancellationToken);
+        if (cancellationToken.IsCancellationRequested) return default;
 
         progress.Update("Read video info and generate transcription", 70);
         var content = await ReadVideoInfoAsync(videoId, accountAccessToken);

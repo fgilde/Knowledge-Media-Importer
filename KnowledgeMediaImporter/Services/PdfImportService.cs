@@ -12,7 +12,7 @@ public class PdfImportService : IImportService
         return contentType == "application/pdf";
     }
 
-    public Task<string> GetKnowledgeTextAsync(byte[] fileData, CancellationToken cancellationToken, IProgressUpdate progress)
+    public Task<string> GetKnowledgeTextAsync(byte[] fileData, KnowledgeTargetSettings targetSettings, CancellationToken cancellationToken, IProgressUpdate progress)
     {
         progress.Start();
         if (cancellationToken.IsCancellationRequested) return default;

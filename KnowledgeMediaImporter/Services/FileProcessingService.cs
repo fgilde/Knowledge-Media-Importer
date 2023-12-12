@@ -56,8 +56,8 @@ public class FileProcessingService : IFileProcessingService
         try
         {
             await file.EnsureDataLoadedAsync();
-            string text = await service.GetKnowledgeTextAsync(file.Data, cts.Token, progress.WithRange(0, 30));
-            var result = await GptService.PrepareContentAsync(text, cts.Token, progress.WithRange(30, 60));
+            string text = await service.GetKnowledgeTextAsync(file.Data, targetSettings, cts.Token, progress.WithRange(0, 30));
+            var result = await GptService.PrepareContentAsync(text, targetSettings, cts.Token, progress.WithRange(30, 60));
             if(result == default) 
                 return;
             result.Content = await service.AfterPrepareAsync(result.Content, cts.Token);

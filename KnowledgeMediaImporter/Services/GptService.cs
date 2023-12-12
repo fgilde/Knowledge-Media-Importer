@@ -20,7 +20,7 @@ public class GptService : IServiceSettingsValidation
         Api = new OpenAIClient(_gptSettings.ApiKey);
     }
 
-    public async Task<(string Title, string Content)> PrepareContentAsync(string text, CancellationToken cancellationToken, IProgressUpdate progress)
+    public async Task<(string Title, string Content)> PrepareContentAsync(string text, KnowledgeTargetSettings targetSettings, CancellationToken cancellationToken, IProgressUpdate progress)
     {
         progress.Start();
         progress.Update("Prepare HTML Content", 20);
@@ -40,10 +40,10 @@ public class GptService : IServiceSettingsValidation
         {
             var model = new OpenAI.Models.Model(_gptSettings.Model);
 
-            var contentString = await GenerateArticleContentAsync(text, model, cancellationToken);
+            var contentString = await GenerateArticleContentAsync(text, targetSettings.TargetLanguage, model, cancellationToken);
             if (cancellationToken.IsCancellationRequested) return default;
             progress.Update("Generate title", 70);
-            var titleString = await GenerateArticleTitleAsync(text, model, cancellationToken);
+            var titleString = await GenerateArticleTitleAsync(text, targetSettings.TargetLanguage, model, cancellationToken);
             progress.Done("Successfully summarized content");
             return (titleString, contentString);
         }
@@ -54,11 +54,11 @@ public class GptService : IServiceSettingsValidation
         }
     }
 
-    private async Task<string> GenerateArticleTitleAsync(string text, OpenAI.Models.Model model, CancellationToken cancellation = default)
+    private async Task<string> GenerateArticleTitleAsync(string text, string language, OpenAI.Models.Model model, CancellationToken cancellation = default)
     {
         var prompts = new[]
         {
-            new ChatPrompt("system", "I have a video transcription and want just a short title for it with max of 30 characters without quotes."),
+            new ChatPrompt("system", "I have a video transcription and want just a short title for it with max of 30 characters without quotes. Please ensure result is in " + language),
             new ChatPrompt("user", text)
         }.ToList();
         ChatRequest chatRequest = new ChatRequest(prompts, model);
@@ -66,14 +66,16 @@ public class GptService : IServiceSettingsValidation
         return response.FirstChoice.ToString().Replace("\"", "");
     }
 
-    private async Task<string> GenerateArticleContentAsync(string text, OpenAI.Models.Model model, CancellationToken cancellation = default)
+    private async Task<string> GenerateArticleContentAsync(string text, string language, OpenAI.Models.Model model, CancellationToken cancellation = default)
     {
         var prompts = new[]
         {
             new ChatPrompt("user", "I have a transcription and want you to summarize the content into an article for a knowledge base. " +
                                      "Please keep it short and leave out irrelevant information and avoid colloquial language and provide a nice html if possible with bullet points, subheader, tables etc" +
                                      "but please without the surrounding body tags." +
-                                     "Please also leave out any intros and outros that do not focus on the main topic as well as references to other content"),
+                                     "Please also leave out any intros and outros that do not focus on the main topic as well as references to other content" +
+                                     "If the text is not in " + language + " then please translate it to " + language
+                                     ),
 
             new ChatPrompt("user", text)
         }.ToList();

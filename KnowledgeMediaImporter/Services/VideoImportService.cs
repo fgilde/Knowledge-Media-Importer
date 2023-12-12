@@ -20,7 +20,7 @@ public class VideoImportService : IImportService, IServiceSettingsValidation
         _analyzer = analyzer;
     }
 
-    public async Task<string> GetKnowledgeTextAsync(byte[] fileData, CancellationToken cancellationToken, IProgressUpdate progress)
+    public async Task<string> GetKnowledgeTextAsync(byte[] fileData, KnowledgeTargetSettings targetSettings, CancellationToken cancellationToken, IProgressUpdate progress)
     {
         var result = await _analyzer.UploadVideoAsync(fileData, progress, cancellationToken);
         _videoId = result.VideoId;

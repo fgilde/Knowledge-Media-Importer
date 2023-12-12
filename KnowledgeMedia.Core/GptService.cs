@@ -32,11 +32,11 @@ public class GptService
         return (titleString, contentString);
     }
 
-    private async Task<string> GenerateArticleTitleAsync(string text, Model model)
+    private async Task<string> GenerateArticleTitleAsync(string text, string language, Model model)
     {
         var prompts = new[]
         {
-            new ChatPrompt("system", "I have a video transcription and want just a short title for it with max of 30 characters without quotes."),
+            new ChatPrompt("system", "I have a video transcription and want just a short title for it with max of 30 characters without quotes. An please ensure result is in " + language),
             new ChatPrompt("user", text)
         }.ToList();
         ChatRequest chatRequest = new ChatRequest(prompts, model);
@@ -44,14 +44,16 @@ public class GptService
         return response.FirstChoice.ToString().Replace("\"", "");
     }
 
-    private async Task<string> GenerateArticleContentAsync(string text, Model model)
+    private async Task<string> GenerateArticleContentAsync(string text, string language, Model model)
     {
         var prompts = new[]
         {
             new ChatPrompt("user", "I have a transcription and want you to summarize the content into an article for a knowledge base. " +
                                      "Please keep it short and leave out irrelevant information and avoid colloquial language and provide a nice html if possible with bullet points, subheader, tables etc" +
                                      "but please without the surrounding body tags." +
-                                     "Please also leave out any intros and outros that do not focus on the main topic as well as references to other content"),
+                                     "Please also leave out any intros and outros that do not focus on the main topic as well as references to other content" +
+                                     "If the content is not in " + language + " please translate it to " + language
+                                     ),
 
             new ChatPrompt("user", text)
         }.ToList();
